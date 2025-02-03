@@ -61,6 +61,7 @@
   <table id="agentsTable">
     <thead>
       <tr>
+        <th>Select</th>
         <th>Agent</th>
         <th>Current Skill</th>
         <th>Skill Change</th>
@@ -68,7 +69,7 @@
     </thead>
     <tbody></tbody>
   </table>
-  <button id="updateSkills">Update Skills</button>
+  <button id="updateSkills">Update Selected Skills</button>
   <script>
     const clientId = 'your-client-id';
     const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/';
@@ -125,6 +126,7 @@
       });
 
       document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
+      document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
     }
 
     async function fetchAgents(token) {
@@ -135,21 +137,48 @@
       }
 
       const agents = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, token);
+      const skills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/skills`, token);
       const tableBody = document.querySelector("#agentsTable tbody");
       tableBody.innerHTML = "";
 
       for (let agent of agents) {
-        const skills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, token);
-        const skillNames = skills.map(skill => skill.name).join(', ');
+        const agentSkills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, token);
+        const skillNames = agentSkills.map(skill => skill.name).join(', ');
+        
+        let skillDropdown = `<select data-user-id="${agent.id}">
+          ${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
+        </select>`;
         
         let row = document.createElement("tr");
         row.innerHTML = `
+          <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
           <td>${skillNames}</td>
-          <td><input type="text" data-user-id="${agent.id}"></td>
+          <td>${skillDropdown}</td>
         `;
         tableBody.appendChild(row);
       }
+    }
+
+    async function updateSelectedSkills(token) {
+      const checkboxes = document.querySelectorAll("#agentsTable input[type='checkbox']:checked");
+      for (let checkbox of checkboxes) {
+        const userId = checkbox.dataset.userId;
+        const skillDropdown = document.querySelector(`select[data-user-id='${userId}']`);
+        const newSkillId = skillDropdown.value;
+        
+        if (newSkillId) {
+          await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify([{ skillId: newSkillId }])
+          });
+        }
+      }
+      alert("Selected skills updated successfully!");
     }
   </script>
 </body>

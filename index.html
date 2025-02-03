@@ -80,7 +80,7 @@
       const queue = data.entities.find(q => q.name.toLowerCase() === queueName.toLowerCase());
       if (queue) {
         const queueId = queue.id;
-        const agentsResponse = await fetch(`${API_BASE}/routing/queues/${queueId}/users`);
+        const agentsResponse = await fetch(`${API_BASE}/routing/queues/${queueId}/members`);
         queueAgents = await agentsResponse.json();
         displayAgents();
       } else {

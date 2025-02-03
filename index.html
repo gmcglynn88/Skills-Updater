@@ -354,7 +354,16 @@
       }
 
       let agents = [];
-      if (queueId) {
+      if (queueId && skillId) {
+        // Fetch agents by queue
+        const queueAgents = await fetchAgentsByQueue(queueId, token);
+        // Fetch agents by skill
+        const skillAgents = await fetchAgentsBySkill(skillId, token);
+
+        // Filter agents who are in both the queue and have the skill
+        const queueAgentIds = new Set(queueAgents.map(agent => agent.id));
+        agents = skillAgents.filter(agent => queueAgentIds.has(agent.id));
+      } else if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
       } else if (skillId) {
         agents = await fetchAgentsBySkill(skillId, token);

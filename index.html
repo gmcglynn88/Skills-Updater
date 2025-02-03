@@ -134,11 +134,13 @@
         tableBody.innerHTML = "";
 
         for (const agent of agents.entities) {
+          const currentSkills = await fetchAgentSkills(agent.id, token);  // Fetch skills
+
           let row = document.createElement("tr");
           row.innerHTML = `
             <td><input type="checkbox" data-user-id="${agent.id}"></td>
             <td>${agent.name}</td>
-            <td>-</td>
+            <td>${currentSkills}</td>
             <td>
               <select data-user-id="${agent.id}">
                 <option value="">Select Skill</option>
@@ -153,6 +155,23 @@
         }
       } catch (error) {
         console.error("Error fetching agents:", error);
+      }
+    }
+
+    async function fetchAgentSkills(userId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const skillsData = await response.json();
+        
+        if (skillsData.entities.length > 0) {
+          return skillsData.entities.map(skill => skill.name).join(", ");
+        }
+        return "No Skills";
+      } catch (error) {
+        console.error(`Error fetching skills for ${userId}:`, error);
+        return "Error";
       }
     }
 

@@ -79,12 +79,12 @@
   <button id="updateSkills">Update Selected Skills</button>
 
   <script>
-    const clientId = 'your-client-id';
-    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/';
+    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
     const responseType = 'token';
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    let availableSkills = [];  
+    let availableSkills = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
@@ -200,6 +200,8 @@
 
     async function updateSelectedSkills(token) {
       const rows = document.querySelectorAll("#agentsTable tbody tr");
+      let updatesSuccessful = true;
+
       for (const row of rows) {
         const checkbox = row.querySelector("input[type='checkbox']");
         if (checkbox.checked) {
@@ -218,23 +220,34 @@
                   "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                  skillId: skillId,
-                  proficiency: parseFloat(proficiency)
+                  id: skillId, // Required: The ID of the skill to add/update
+                  proficiency: parseFloat(proficiency) // Required: The proficiency value (0.0 to 5.0)
                 })
               });
 
               if (response.ok) {
-                console.log(`Skill updated for user ${userId}`);
+                console.log(`Skill updated for user ${userId}:`, await response.json());
               } else {
-                console.error(`Failed to update skill for user ${userId}:`, await response.text());
+                const errorResponse = await response.json();
+                console.error(`Failed to update skill for user ${userId}:`, errorResponse);
+                updatesSuccessful = false;
               }
             } catch (error) {
               console.error(`Error updating skill for user ${userId}:`, error);
+              updatesSuccessful = false;
             }
+          } else {
+            console.error(`Missing skill ID or proficiency for user ${userId}`);
+            updatesSuccessful = false;
           }
         }
       }
-      alert("Skills updated successfully!");
+
+      if (updatesSuccessful) {
+        alert("Skills updated successfully!");
+      } else {
+        alert("Some skills failed to update. Check the console for details.");
+      }
     }
   </script>
 </body>

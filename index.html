@@ -75,7 +75,7 @@
     const responseType = 'token';
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    let availableSkills = [];  // Holds all available skills
+    let availableSkills = [];  
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
@@ -92,7 +92,7 @@
     async function initializeApp(token) {
       console.log("Initializing app with token");
       await fetchQueues(token);
-      await fetchSkills(token);  // Fetch skills for dropdown
+      await fetchSkills(token);
       document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
     }
@@ -146,7 +146,6 @@
         });
         const agents = await response.json();
 
-        console.log("Agents loaded:", agents.entities.length);
         const tableBody = document.querySelector("#agentsTable tbody");
         tableBody.innerHTML = "";
 
@@ -180,10 +179,9 @@
         });
         const skillsData = await response.json();
         
-        if (skillsData.entities.length > 0) {
-          return skillsData.entities.map(skill => skill.name).join(", ");
-        }
-        return "No Skills";
+        return skillsData.entities.length > 0
+          ? skillsData.entities.map(skill => skill.name).join(", ")
+          : "No Skills";
       } catch (error) {
         console.error(`Error fetching skills for ${userId}:`, error);
         return "Error";
@@ -197,8 +195,7 @@
           const skill = document.querySelector(`select[data-user-id="${userId}"]`).value;
           const proficiency = document.querySelector(`input[data-user-id="${userId}"]`).value;
           
-          if (!skill || !proficiency) return null;
-          return { userId, skill, proficiency: parseFloat(proficiency) };
+          return skill && proficiency ? { userId, skill, proficiency: parseFloat(proficiency) } : null;
         })
         .filter(agent => agent !== null);
 

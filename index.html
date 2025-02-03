@@ -38,6 +38,16 @@
     #results {
       margin-top: 20px;
     }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -45,72 +55,77 @@
     <img id="logo" src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png" alt="Company Logo">
   </div>
   <h1>Genesys Bulk Skill Manager</h1>
-  <label for="searchUser">Search users:</label>
-  <input type="text" id="searchUser" placeholder="Type to filter users...">
-  <label for="agentSelect">Select an Agent:</label>
-  <select id="agentSelect"></select>
-  <button id="fetchSkills">Get Skills</button>
-  <div id="skillsContainer"></div>
+  <label for="queueSearch">Search Queue:</label>
+  <input type="text" id="queueSearch" placeholder="Type to find a queue...">
+  <button id="fetchAgents">Get Agents</button>
+  <table id="agentsTable">
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>Current Skill</th>
+        <th>Skill Change</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
   <button id="updateSkills">Update Skills</button>
-  <div id="results"></div>
   <script>
     const API_BASE = "https://api.mypurecloud.ie/api/v2";
-    let users = [];
-    let selectedUser = null;
-    let skills = [];
+    let queueAgents = [];
 
-    async function fetchUsers() {
-      const response = await fetch(`${API_BASE}/users`);
+    async function fetchAgents() {
+      const queueName = document.getElementById("queueSearch").value;
+      const response = await fetch(`${API_BASE}/routing/queues`);
       const data = await response.json();
-      users = data.entities;
-      populateUserDropdown();
+      const queue = data.entities.find(q => q.name.toLowerCase() === queueName.toLowerCase());
+      if (queue) {
+        const queueId = queue.id;
+        const agentsResponse = await fetch(`${API_BASE}/routing/queues/${queueId}/users`);
+        queueAgents = await agentsResponse.json();
+        displayAgents();
+      } else {
+        alert("Queue not found");
+      }
     }
 
-    function populateUserDropdown() {
-      const dropdown = document.getElementById("agentSelect");
-      dropdown.innerHTML = "";
-      users.forEach(user => {
-        let option = document.createElement("option");
-        option.value = user.id;
-        option.textContent = user.name;
-        dropdown.appendChild(option);
-      });
+    async function fetchSkills(userId) {
+      const response = await fetch(`${API_BASE}/users/${userId}/routingskills`);
+      return await response.json();
     }
 
-    async function fetchSkills() {
-      selectedUser = document.getElementById("agentSelect").value;
-      const response = await fetch(`${API_BASE}/users/${selectedUser}/routingskills`);
-      skills = await response.json();
-      displaySkills();
-    }
-
-    function displaySkills() {
-      const container = document.getElementById("skillsContainer");
-      container.innerHTML = "";
-      skills.entities.forEach(skill => {
-        let input = document.createElement("input");
-        input.type = "text";
-        input.value = skill.name;
-        input.dataset.id = skill.id;
-        container.appendChild(input);
-      });
+    async function displayAgents() {
+      const tableBody = document.querySelector("#agentsTable tbody");
+      tableBody.innerHTML = "";
+      for (let agent of queueAgents.entities) {
+        let skillsData = await fetchSkills(agent.id);
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${agent.name}</td>
+          <td>${skillsData.entities.map(skill => skill.name).join(", ")}</td>
+          <td><input type="text" data-user-id="${agent.id}"></td>
+        `;
+        tableBody.appendChild(row);
+      }
     }
 
     async function updateSkills() {
-      const inputs = document.querySelectorAll("#skillsContainer input");
+      const inputs = document.querySelectorAll("#agentsTable input");
       for (let input of inputs) {
-        await fetch(`${API_BASE}/users/${selectedUser}/routingskills/${input.dataset.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: input.value })
-        });
+        const userId = input.dataset.userId;
+        const newSkill = input.value;
+        if (newSkill) {
+          await fetch(`${API_BASE}/users/${userId}/routingskills`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify([{ name: newSkill }])
+          });
+        }
       }
       alert("Skills updated. Note: This overwrites existing skills.");
     }
 
-    document.getElementById("fetchSkills").addEventListener("click", fetchSkills);
+    document.getElementById("fetchAgents").addEventListener("click", fetchAgents);
     document.getElementById("updateSkills").addEventListener("click", updateSkills);
-    document.addEventListener("DOMContentLoaded", fetchUsers);
   </script>
 </body>
 </html>

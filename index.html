@@ -197,6 +197,45 @@
         console.error("Error fetching agents:", error);
       }
     }
+
+    async function updateSelectedSkills(token) {
+      const rows = document.querySelectorAll("#agentsTable tbody tr");
+      for (const row of rows) {
+        const checkbox = row.querySelector("input[type='checkbox']");
+        if (checkbox.checked) {
+          const userId = checkbox.getAttribute("data-user-id");
+          const skillSelect = row.querySelector("select");
+          const skillId = skillSelect.value;
+          const proficiencyInput = row.querySelector("input[type='number']");
+          const proficiency = proficiencyInput.value;
+
+          if (skillId && proficiency) {
+            try {
+              const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  skillId: skillId,
+                  proficiency: parseFloat(proficiency)
+                })
+              });
+
+              if (response.ok) {
+                console.log(`Skill updated for user ${userId}`);
+              } else {
+                console.error(`Failed to update skill for user ${userId}:`, await response.text());
+              }
+            } catch (error) {
+              console.error(`Error updating skill for user ${userId}:`, error);
+            }
+          }
+        }
+      }
+      alert("Skills updated successfully!");
+    }
   </script>
 </body>
 </html>

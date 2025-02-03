@@ -163,6 +163,29 @@
         tableBody.appendChild(row);
       }
     }
+
+    async function updateSelectedSkills(token) {
+      const checkboxes = document.querySelectorAll("#agentsTable input[type='checkbox']:checked");
+      for (let checkbox of checkboxes) {
+        const userId = checkbox.dataset.userId;
+        const skillDropdown = document.querySelector(`select[data-user-id='${userId}']`);
+        const proficiencyInput = document.querySelector(`input[type='number'][data-user-id='${userId}']`);
+        const skillId = skillDropdown.value;
+        const proficiency = parseFloat(proficiencyInput.value);
+        
+        if (skillId && !isNaN(proficiency)) {
+          await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills/${skillId}`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ proficiency: proficiency })
+          });
+        }
+      }
+      alert("Selected skills and proficiencies updated successfully!");
+    }
   </script>
 </body>
 </html>

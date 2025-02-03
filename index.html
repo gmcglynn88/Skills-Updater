@@ -146,6 +146,22 @@
         console.error("Error fetching queues:", error);
       }
     }
+
+    async function fetchAgents(token) {
+      const queueId = document.getElementById('queueDropdown').value;
+      if (!queueId) {
+        alert('Please select a queue first.');
+        return;
+      }
+      
+      console.log("Fetching agents for queue:", queueId);
+      try {
+        const agents = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, token);
+        console.log("Agents loaded:", agents.length);
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
+    }
   </script>
 </body>
 </html>

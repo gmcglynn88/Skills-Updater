@@ -47,6 +47,16 @@
       margin: 20px;
     }
 
+    .filters {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .filters > div {
+      flex: 1;
+    }
+
     label, select, input, button {
       display: block;
       margin: 10px 0;
@@ -102,16 +112,6 @@
       box-sizing: border-box;
       border: 1px solid #ddd;
       border-radius: 5px;
-    }
-
-    .filters {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .filters > div {
-      flex: 1;
     }
 
     .checkbox-container {
@@ -176,11 +176,16 @@
   <div class="divider"></div>
 
   <div class="container">
-    <label for="queueDropdown">Select Queue:</label>
-    <select id="queueDropdown"></select>
-
-    <label for="skillDropdown">Select Skill:</label>
-    <select id="skillDropdown"></select>
+    <div class="filters">
+      <div>
+        <label for="queueDropdown">Select Queue:</label>
+        <select id="queueDropdown"></select>
+      </div>
+      <div>
+        <label for="skillDropdown">Select Skill:</label>
+        <select id="skillDropdown"></select>
+      </div>
+    </div>
 
     <button id="fetchAgents">Get Agents</button>
 
@@ -207,6 +212,7 @@
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
     let availableSkills = [];
+    let allAgents = []; // Store all agents for local filtering
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
@@ -331,15 +337,28 @@
       }
     }
 
-    async function fetchAgentsBySkill(skillId, token) {
+    async function fetchAllAgents(token) {
       try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users?routingSkills=${skillId}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
+        let allAgents = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/users?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+
+          if (data.entities) {
+            allAgents = allAgents.concat(data.entities); // Add the current page's agents to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        return allAgents;
       } catch (error) {
-        console.error("Error fetching agents by skill:", error);
+        console.error("Error fetching all agents:", error);
         return [];
       }
     }
@@ -357,7 +376,9 @@
       if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
       } else if (skillId) {
-        agents = await fetchAgentsBySkill(skillId, token);
+        // Fetch all agents and filter locally
+        const allAgents = await fetchAllAgents(token);
+        agents = await filterAgentsBySkill(allAgents, skillId, token);
       }
 
       const tableBody = document.querySelector("#agentsTable tbody");
@@ -381,6 +402,17 @@
         `;
         tableBody.appendChild(row);
       }
+    }
+
+    async function filterAgentsBySkill(agents, skillId, token) {
+      const filteredAgents = [];
+      for (const agent of agents) {
+        const skills = await fetchAgentSkills(agent.id, token);
+        if (skills.includes(availableSkills.find(skill => skill.id === skillId)?.name)) {
+          filteredAgents.push(agent);
+        }
+      }
+      return filteredAgents;
     }
 
     async function updateSelectedSkills(token) {

@@ -45,7 +45,6 @@
       padding: 10px;
       text-align: left;
     }
-    /* Ensures proficiency input fields fit */
     td input[type="number"] {
       width: 100px;
       padding: 5px;
@@ -59,7 +58,7 @@
     <img id="logo" src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png" alt="Company Logo">
   </div>
   <h1>Genesys Bulk Skill Manager</h1>
-  
+
   <label for="queueDropdown">Select Queue:</label>
   <select id="queueDropdown"></select>
   <button id="fetchAgents">Get Agents</button>
@@ -100,7 +99,7 @@
     });
 
     async function initializeApp(token) {
-      console.log("Initializing app with token");
+      console.log("Initializing app...");
       await fetchQueues(token);
       await fetchSkills(token);
       document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
@@ -140,7 +139,7 @@
           name: skill.name
         }));
 
-        console.log("Available Skills Loaded:", availableSkills);
+        console.log("Skills Loaded:", availableSkills);
       } catch (error) {
         console.error("Error fetching skills:", error);
       }

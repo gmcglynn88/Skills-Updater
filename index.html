@@ -89,47 +89,51 @@
       }
     });
 
-    async function fetchAgents(token) {
-      const queueId = document.getElementById('queueDropdown').value;
-      if (!queueId) {
-        alert('Please select a queue first.');
-        return;
+    async function initializeApp(token) {
+      console.log("Initializing app with token");
+      document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
+      document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
+    }
+
+    async function updateSelectedSkills(token) {
+      const checkboxes = document.querySelectorAll("#agentsTable input[type='checkbox']:checked");
+      for (let checkbox of checkboxes) {
+        const userId = checkbox.dataset.userId;
+        const skillDropdown = document.querySelector(`select[data-user-id='${userId}']`);
+        const proficiencyInput = document.querySelector(`input[type='number'][data-user-id='${userId}']`);
+        const skillId = skillDropdown.value;
+        const proficiency = parseFloat(proficiencyInput.value);
+
+        if (skillId && !isNaN(proficiency)) {
+          try {
+            const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify([
+                {
+                  "id": skillId,
+                  "proficiency": proficiency
+                }
+              ])
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(`Failed to update user ${userId}: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+            }
+
+            console.log(`Updated user ${userId} with skill ${skillId} and proficiency ${proficiency}`);
+          } catch (error) {
+            console.error(`Error updating skills for user ${userId}:`, error);
+          }
+        } else {
+          console.warn(`Skipping user ${userId}: Invalid skill or proficiency`);
+        }
       }
-      
-      console.log("Fetching agents for queue:", queueId);
-      try {
-        const agents = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, token);
-        const skills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/skills`, token);
-
-        const tableBody = document.querySelector("#agentsTable tbody");
-        tableBody.innerHTML = "";
-
-        const agentRequests = agents.map(async (agent) => {
-          const agentSkills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, token);
-          const skillNames = agentSkills.map(skill => skill.name).join(', ');
-
-          let skillDropdown = `<select data-user-id="${agent.id}">
-            ${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
-          </select>`;
-
-          let proficiencyInput = `<input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency">`;
-
-          let row = document.createElement("tr");
-          row.innerHTML = `
-            <td><input type="checkbox" data-user-id="${agent.id}"></td>
-            <td>${agent.name}</td>
-            <td>${skillNames || "None"}</td>
-            <td>${skillDropdown}</td>
-            <td>${proficiencyInput}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-
-        await Promise.all(agentRequests);
-        console.log("Finished loading agents.");
-      } catch (error) {
-        console.error("Error loading agents:", error);
-      }
+      alert("Selected skills and proficiencies updated successfully!");
     }
   </script>
 </body>

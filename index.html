@@ -143,9 +143,6 @@
       tableBody.innerHTML = "";
 
       for (let agent of agents) {
-        const agentSkills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, token);
-        const skillNames = agentSkills.map(skill => skill.name).join(', ');
-        
         let skillDropdown = `<select data-user-id="${agent.id}">
           ${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
         </select>`;
@@ -156,7 +153,7 @@
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
-          <td>${skillNames}</td>
+          <td>-</td>
           <td>${skillDropdown}</td>
           <td>${proficiencyInput}</td>
         `;
@@ -172,15 +169,20 @@
         const proficiencyInput = document.querySelector(`input[type='number'][data-user-id='${userId}']`);
         const skillId = skillDropdown.value;
         const proficiency = parseFloat(proficiencyInput.value);
-        
+
         if (skillId && !isNaN(proficiency)) {
-          await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills/${skillId}`, {
+          await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
             method: "PUT",
             headers: {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ proficiency: proficiency })
+            body: JSON.stringify([
+              {
+                skillId: skillId,
+                proficiency: proficiency
+              }
+            ])
           });
         }
       }

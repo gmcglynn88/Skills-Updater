@@ -84,7 +84,7 @@
     const responseType = 'token';
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    let availableSkills = [];
+    let availableSkills = [];  
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);

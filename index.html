@@ -130,6 +130,11 @@
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
     }
 
+    async function fetchAgents(token) {
+      console.log("Fetching agents...");
+      // Placeholder function implementation to prevent errors
+    }
+
     async function updateSelectedSkills(token) {
       const checkboxes = document.querySelectorAll("#agentsTable input[type='checkbox']:checked");
       for (let checkbox of checkboxes) {
@@ -149,7 +154,7 @@
               },
               body: JSON.stringify([
                 {
-                  "id": skillId,  // Corrected to match API schema
+                  "id": skillId,
                   "proficiency": proficiency
                 }
               ])

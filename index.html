@@ -65,6 +65,7 @@
         <th>Agent</th>
         <th>Current Skill</th>
         <th>Skill Change</th>
+        <th>Proficiency</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -149,36 +150,18 @@
           ${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
         </select>`;
         
+        let proficiencyInput = `<input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency">`;
+        
         let row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
           <td>${skillNames}</td>
           <td>${skillDropdown}</td>
+          <td>${proficiencyInput}</td>
         `;
         tableBody.appendChild(row);
       }
-    }
-
-    async function updateSelectedSkills(token) {
-      const checkboxes = document.querySelectorAll("#agentsTable input[type='checkbox']:checked");
-      for (let checkbox of checkboxes) {
-        const userId = checkbox.dataset.userId;
-        const skillDropdown = document.querySelector(`select[data-user-id='${userId}']`);
-        const newSkillId = skillDropdown.value;
-        
-        if (newSkillId) {
-          await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-            method: "PUT",
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify([{ skillId: newSkillId }])
-          });
-        }
-      }
-      alert("Selected skills updated successfully!");
     }
   </script>
 </body>

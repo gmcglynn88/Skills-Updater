@@ -89,10 +89,79 @@
       }
     });
 
-    async function initializeApp(token) {
+    function initializeApp(token) {
       console.log("Initializing app with token");
       document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
+    }
+
+    async function fetchAgents(token) {
+      const queueId = document.getElementById('queueDropdown').value;
+      if (!queueId) {
+        alert('Please select a queue first.');
+        return;
+      }
+
+      console.log("Fetching agents for queue:", queueId);
+      try {
+        const agents = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, token);
+        const skills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/skills`, token);
+
+        const tableBody = document.querySelector("#agentsTable tbody");
+        tableBody.innerHTML = "";
+
+        const agentRequests = agents.map(async (agent) => {
+          const agentSkills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, token);
+          const skillNames = agentSkills.map(skill => skill.name).join(', ');
+
+          let skillDropdown = `<select data-user-id="${agent.id}">
+            ${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
+          </select>`;
+
+          let proficiencyInput = `<input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency">`;
+
+          let row = document.createElement("tr");
+          row.innerHTML = `
+            <td><input type="checkbox" data-user-id="${agent.id}"></td>
+            <td>${agent.name}</td>
+            <td>${skillNames || "None"}</td>
+            <td>${skillDropdown}</td>
+            <td>${proficiencyInput}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        await Promise.all(agentRequests);
+        console.log("Finished loading agents.");
+      } catch (error) {
+        console.error("Error loading agents:", error);
+      }
+    }
+
+    async function fetchAllPages(url, token) {
+      let allItems = [];
+      let pageNumber = 1;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
+        const response = await fetch(`${url}?pageNumber=${pageNumber}&pageSize=100`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error fetching data: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        allItems = allItems.concat(data.entities);
+
+        if (data.pageCount > pageNumber) {
+          pageNumber++;
+        } else {
+          hasMorePages = false;
+        }
+      }
+      return allItems;
     }
 
     async function updateSelectedSkills(token) {

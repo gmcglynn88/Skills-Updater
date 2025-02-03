@@ -55,8 +55,11 @@
     <img id="logo" src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png" alt="Company Logo">
   </div>
   <h1>Genesys Bulk Skill Manager</h1>
-  <label for="queueSearch">Search Queue:</label>
+  <label for="queueDropdown">Select Queue:</label>
+  <select id="queueDropdown"></select>
+  <label for="queueSearch">Or Search Queue:</label>
   <input type="text" id="queueSearch" placeholder="Type to find a queue...">
+  <button id="fetchQueues">Load Queues</button>
   <button id="fetchAgents">Get Agents</button>
   <table id="agentsTable">
     <thead>
@@ -71,21 +74,36 @@
   <button id="updateSkills">Update Skills</button>
   <script>
     const API_BASE = "https://api.mypurecloud.ie/api/v2";
+    let queues = [];
     let queueAgents = [];
 
-    async function fetchAgents() {
-      const queueName = document.getElementById("queueSearch").value;
+    async function fetchQueues() {
       const response = await fetch(`${API_BASE}/routing/queues`);
       const data = await response.json();
-      const queue = data.entities.find(q => q.name.toLowerCase() === queueName.toLowerCase());
-      if (queue) {
-        const queueId = queue.id;
-        const agentsResponse = await fetch(`${API_BASE}/routing/queues/${queueId}/members`);
-        queueAgents = await agentsResponse.json();
-        displayAgents();
-      } else {
-        alert("Queue not found");
+      queues = data.entities;
+      populateQueueDropdown();
+    }
+
+    function populateQueueDropdown() {
+      const dropdown = document.getElementById("queueDropdown");
+      dropdown.innerHTML = "";
+      queues.forEach(queue => {
+        let option = document.createElement("option");
+        option.value = queue.id;
+        option.textContent = queue.name;
+        dropdown.appendChild(option);
+      });
+    }
+
+    async function fetchAgents() {
+      const selectedQueueId = document.getElementById("queueDropdown").value;
+      if (!selectedQueueId) {
+        alert("Please select a queue first.");
+        return;
       }
+      const agentsResponse = await fetch(`${API_BASE}/routing/queues/${selectedQueueId}/members`);
+      queueAgents = await agentsResponse.json();
+      displayAgents();
     }
 
     async function fetchSkills(userId) {
@@ -124,6 +142,7 @@
       alert("Skills updated. Note: This overwrites existing skills.");
     }
 
+    document.getElementById("fetchQueues").addEventListener("click", fetchQueues);
     document.getElementById("fetchAgents").addEventListener("click", fetchAgents);
     document.getElementById("updateSkills").addEventListener("click", updateSkills);
   </script>

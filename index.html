@@ -73,66 +73,52 @@
   </table>
   <button id="updateSkills">Update Skills</button>
   <script>
-    const API_BASE = "https://api.mypurecloud.ie/api/v2";
-    let queues = [];
-    let queueAgents = [];
+    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734';
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/';
+    const responseType = 'token';
+    const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    async function authenticate() {
-      try {
-        const response = await fetch("/get-token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error("Authentication failed. Please check the backend logs.");
-        }
-        
-        const data = await response.json();
-        localStorage.setItem("access_token", data.access_token);
-        console.log("Authenticated successfully!");
-      } catch (error) {
-        console.error("Authentication Error:", error);
-      }
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const token = params.get('access_token');
 
-    async function getAccessToken() {
-      return localStorage.getItem("access_token");
-    }
-
-    async function fetchQueues() {
-      await authenticate();
-      const token = await getAccessToken();
       if (!token) {
-        alert("Authentication failed. Please check your credentials.");
-        return;
+        window.location.href = oauthUrl;
+      } else {
+        initializeApp(token);
       }
-      const response = await fetch(`${API_BASE}/routing/queues`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
+    });
+
+    function initializeApp(token) {
+      document.getElementById('fetchQueues').addEventListener('click', () => {
+        fetchQueues(token);
+      });
+    }
+
+    async function fetchQueues(token) {
+      try {
+        const response = await fetch('https://api.mypurecloud.ie/api/v2/routing/queues', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error fetching queues: ${response.status} ${response.statusText}`);
         }
-      });
-      const data = await response.json();
-      queues = data.entities;
-      populateQueueDropdown();
-    }
 
-    function populateQueueDropdown() {
-      const dropdown = document.getElementById("queueDropdown");
-      dropdown.innerHTML = "";
-      queues.forEach(queue => {
-        let option = document.createElement("option");
-        option.value = queue.id;
-        option.textContent = queue.name;
-        dropdown.appendChild(option);
-      });
+        const data = await response.json();
+        const queueSelect = document.getElementById('queueDropdown');
+        queueSelect.innerHTML = "";
+        data.entities.forEach(queue => {
+          const option = document.createElement('option');
+          option.value = queue.id;
+          option.text = queue.name;
+          queueSelect.add(option);
+        });
+      } catch (error) {
+        console.error('Error loading queues:', error);
+      }
     }
-
-    document.getElementById("fetchQueues").addEventListener("click", fetchQueues);
   </script>
 </body>
 </html>

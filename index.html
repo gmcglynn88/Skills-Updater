@@ -57,9 +57,6 @@
   <h1>Genesys Bulk Skill Manager</h1>
   <label for="queueDropdown">Select Queue:</label>
   <select id="queueDropdown"></select>
-  <label for="queueSearch">Or Search Queue:</label>
-  <input type="text" id="queueSearch" placeholder="Type to find a queue...">
-  <button id="fetchQueues">Load Queues</button>
   <button id="fetchAgents">Get Agents</button>
   <table id="agentsTable">
     <thead>
@@ -90,33 +87,44 @@
       }
     });
 
-    function initializeApp(token) {
-      document.getElementById('fetchQueues').addEventListener('click', () => fetchQueues(token));
-      document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
-    }
+    async function fetchAllPages(url, token) {
+      let allItems = [];
+      let pageNumber = 1;
+      let hasMorePages = true;
 
-    async function fetchQueues(token) {
-      try {
-        const response = await fetch('https://api.mypurecloud.ie/api/v2/routing/queues', {
+      while (hasMorePages) {
+        const response = await fetch(`${url}?pageNumber=${pageNumber}&pageSize=100`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) {
-          throw new Error(`Error fetching queues: ${response.status} ${response.statusText}`);
+          throw new Error(`Error fetching data: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-        const queueSelect = document.getElementById('queueDropdown');
-        queueSelect.innerHTML = "";
-        data.entities.forEach(queue => {
-          const option = document.createElement('option');
-          option.value = queue.id;
-          option.text = queue.name;
-          queueSelect.add(option);
-        });
-      } catch (error) {
-        console.error('Error loading queues:', error);
+        allItems = allItems.concat(data.entities);
+
+        if (data.pageCount > pageNumber) {
+          pageNumber++;
+        } else {
+          hasMorePages = false;
+        }
       }
+      return allItems;
+    }
+
+    async function initializeApp(token) {
+      const queues = await fetchAllPages('https://api.mypurecloud.ie/api/v2/routing/queues', token);
+      const queueSelect = document.getElementById('queueDropdown');
+      queueSelect.innerHTML = "";
+      queues.forEach(queue => {
+        const option = document.createElement('option');
+        option.value = queue.id;
+        option.text = queue.name;
+        queueSelect.add(option);
+      });
+
+      document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
     }
 
     async function fetchAgents(token) {
@@ -126,37 +134,21 @@
         return;
       }
 
-      try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+      const agents = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, token);
+      const tableBody = document.querySelector("#agentsTable tbody");
+      tableBody.innerHTML = "";
 
-        if (!response.ok) {
-          throw new Error(`Error fetching agents: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const tableBody = document.querySelector("#agentsTable tbody");
-        tableBody.innerHTML = "";
-
-        for (let agent of data.entities) {
-          const skillsResponse = await fetch(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          
-          const skillsData = await skillsResponse.json();
-          const skillNames = skillsData.entities.map(skill => skill.name).join(', ');
-          
-          let row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${agent.name}</td>
-            <td>${skillNames}</td>
-            <td><input type="text" data-user-id="${agent.id}"></td>
-          `;
-          tableBody.appendChild(row);
-        }
-      } catch (error) {
-        console.error('Error loading agents:', error);
+      for (let agent of agents) {
+        const skills = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/users/${agent.id}/routingskills`, token);
+        const skillNames = skills.map(skill => skill.name).join(', ');
+        
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${agent.name}</td>
+          <td>${skillNames}</td>
+          <td><input type="text" data-user-id="${agent.id}"></td>
+        `;
+        tableBody.appendChild(row);
       }
     }
   </script>

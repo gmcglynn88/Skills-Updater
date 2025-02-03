@@ -223,7 +223,7 @@
     async function initializeApp(token) {
       console.log("Initializing app...");
       await fetchQueues(token);
-      await fetchSkills(token);
+      await fetchAllSkills(token); // Fetch all skills with pagination
       populateSkillDropdown();
       document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
@@ -262,14 +262,26 @@
       }
     }
 
-    async function fetchSkills(token) {
+    async function fetchAllSkills(token) {
       try {
-        const response = await fetch("https://api.mypurecloud.ie/api/v2/routing/skills", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const skillsData = await response.json();
+        let allSkills = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/skills?pageSize=100"; // Start with the first page
 
-        availableSkills = skillsData.entities.map(skill => ({
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+
+          if (data.entities) {
+            allSkills = allSkills.concat(data.entities); // Add the current page's skills to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableSkills = allSkills.map(skill => ({
           id: skill.id,
           name: skill.name
         }));

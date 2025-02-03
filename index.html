@@ -35,9 +35,6 @@
       max-width: 400px;
       font-size: 16px;
     }
-    #results {
-      margin-top: 20px;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -71,6 +68,7 @@
     <tbody></tbody>
   </table>
   <button id="updateSkills">Update Selected Skills</button>
+
   <script>
     const clientId = 'your-client-id';
     const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/';
@@ -96,34 +94,106 @@
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
     }
 
+    async function fetchQueues(token) {
+      try {
+        const response = await fetch("https://api.mypurecloud.ie/api/v2/routing/queues", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        const dropdown = document.getElementById('queueDropdown');
+        dropdown.innerHTML = '<option value="">Select Queue</option>';
+        
+        data.entities.forEach(queue => {
+          let option = document.createElement("option");
+          option.value = queue.id;
+          option.textContent = queue.name;
+          dropdown.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching queues:", error);
+      }
+    }
+
     async function fetchAgents(token) {
       const queueId = document.getElementById('queueDropdown').value;
       if (!queueId) {
         alert('Please select a queue first.');
         return;
       }
-      
+
       console.log("Fetching agents for queue:", queueId);
       try {
-        const agents = await fetchAllPages(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, token);
-        console.log("Agents loaded:", agents.length);
-        
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const agents = await response.json();
+
+        console.log("Agents loaded:", agents.entities.length);
         const tableBody = document.querySelector("#agentsTable tbody");
         tableBody.innerHTML = "";
 
-        agents.forEach(agent => {
+        for (const agent of agents.entities) {
           let row = document.createElement("tr");
           row.innerHTML = `
             <td><input type="checkbox" data-user-id="${agent.id}"></td>
             <td>${agent.name}</td>
             <td>-</td>
-            <td><select data-user-id="${agent.id}"><option value="">Select Skill</option></select></td>
+            <td>
+              <select data-user-id="${agent.id}">
+                <option value="">Select Skill</option>
+                <option value="Skill A">Skill A</option>
+                <option value="Skill B">Skill B</option>
+                <option value="Skill C">Skill C</option>
+              </select>
+            </td>
             <td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td>
           `;
           tableBody.appendChild(row);
-        });
+        }
       } catch (error) {
         console.error("Error fetching agents:", error);
+      }
+    }
+
+    async function updateSelectedSkills(token) {
+      const selectedAgents = Array.from(document.querySelectorAll("input[type='checkbox']:checked"))
+        .map(checkbox => {
+          const userId = checkbox.dataset.userId;
+          const skill = document.querySelector(`select[data-user-id="${userId}"]`).value;
+          const proficiency = document.querySelector(`input[data-user-id="${userId}"]`).value;
+          
+          if (!skill || !proficiency) return null;
+          return { userId, skill, proficiency: parseFloat(proficiency) };
+        })
+        .filter(agent => agent !== null);
+
+      if (selectedAgents.length === 0) {
+        alert("No agents selected or missing skill/proficiency.");
+        return;
+      }
+
+      console.log("Updating skills for agents:", selectedAgents);
+
+      for (const agent of selectedAgents) {
+        try {
+          const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${agent.userId}/routingskills`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              name: agent.skill,
+              proficiency: agent.proficiency
+            })
+          });
+
+          if (!response.ok) throw new Error(`Failed to update agent ${agent.userId}`);
+          console.log(`Updated ${agent.userId} with skill ${agent.skill} at proficiency ${agent.proficiency}`);
+        } catch (error) {
+          console.error("Error updating skills:", error);
+        }
       }
     }
   </script>

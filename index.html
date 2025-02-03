@@ -1,114 +1,116 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-
-const GenesysSkillManager = () => {
-  const [users, setUsers] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [skills, setSkills] = useState({});
-  const [loading, setLoading] = useState(false);
-  const API_BASE = "https://api.mypurecloud.ie/api/v2";
-  
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-  
-  const fetchUsers = async () => {
-    setLoading(true);
-    const response = await fetch(`${API_BASE}/users`);
-    const data = await response.json();
-    setUsers(data.entities);
-    setLoading(false);
-  };
-  
-  const fetchSkills = async (userId) => {
-    const response = await fetch(`${API_BASE}/users/${userId}/routingskills`);
-    const data = await response.json();
-    return data.entities;
-  };
-  
-  const handleUserSelect = async (userId) => {
-    if (selectedUsers.includes(userId)) {
-      setSelectedUsers(selectedUsers.filter(id => id !== userId));
-      const updatedSkills = { ...skills };
-      delete updatedSkills[userId];
-      setSkills(updatedSkills);
-    } else {
-      setSelectedUsers([...selectedUsers, userId]);
-      const userSkills = await fetchSkills(userId);
-      setSkills(prev => ({ ...prev, [userId]: userSkills }));
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Genesys Bulk Skill Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Proxima Nova', Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
     }
-  };
-  
-  const handleSkillChange = (userId, skillIndex, newValue) => {
-    const updatedSkills = { ...skills };
-    updatedSkills[userId][skillIndex].name = newValue;
-    setSkills(updatedSkills);
-  };
-  
-  const updateSkills = async () => {
-    for (const userId of selectedUsers) {
-      for (const skill of skills[userId]) {
-        await fetch(`${API_BASE}/users/${userId}/routingskills/${skill.id}`, {
+    #logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #logo {
+      width: 300px;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    label, select, input, button {
+      display: block;
+      margin: 10px 0;
+    }
+    label {
+      font-weight: bold;
+    }
+    select, input, button {
+      margin-top: 10px;
+      padding: 12px;
+      width: 100%;
+      max-width: 400px;
+      font-size: 16px;
+    }
+    #results {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="logo-container">
+    <img id="logo" src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png" alt="Company Logo">
+  </div>
+  <h1>Genesys Bulk Skill Manager</h1>
+  <label for="searchUser">Search users:</label>
+  <input type="text" id="searchUser" placeholder="Type to filter users...">
+  <label for="agentSelect">Select an Agent:</label>
+  <select id="agentSelect"></select>
+  <button id="fetchSkills">Get Skills</button>
+  <div id="skillsContainer"></div>
+  <button id="updateSkills">Update Skills</button>
+  <div id="results"></div>
+  <script>
+    const API_BASE = "https://api.mypurecloud.ie/api/v2";
+    let users = [];
+    let selectedUser = null;
+    let skills = [];
+
+    async function fetchUsers() {
+      const response = await fetch(`${API_BASE}/users`);
+      const data = await response.json();
+      users = data.entities;
+      populateUserDropdown();
+    }
+
+    function populateUserDropdown() {
+      const dropdown = document.getElementById("agentSelect");
+      dropdown.innerHTML = "";
+      users.forEach(user => {
+        let option = document.createElement("option");
+        option.value = user.id;
+        option.textContent = user.name;
+        dropdown.appendChild(option);
+      });
+    }
+
+    async function fetchSkills() {
+      selectedUser = document.getElementById("agentSelect").value;
+      const response = await fetch(`${API_BASE}/users/${selectedUser}/routingskills`);
+      skills = await response.json();
+      displaySkills();
+    }
+
+    function displaySkills() {
+      const container = document.getElementById("skillsContainer");
+      container.innerHTML = "";
+      skills.entities.forEach(skill => {
+        let input = document.createElement("input");
+        input.type = "text";
+        input.value = skill.name;
+        input.dataset.id = skill.id;
+        container.appendChild(input);
+      });
+    }
+
+    async function updateSkills() {
+      const inputs = document.querySelectorAll("#skillsContainer input");
+      for (let input of inputs) {
+        await fetch(`${API_BASE}/users/${selectedUser}/routingskills/${input.dataset.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(skill),
+          body: JSON.stringify({ name: input.value })
         });
       }
+      alert("Skills updated. Note: This overwrites existing skills.");
     }
-    alert("Skills updated. Note: This overwrites existing skills.");
-  };
-  
-  return (
-    <div style={{ fontFamily: 'Proxima Nova, Arial, sans-serif', margin: '20px', padding: '20px' }}>
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <img
-          style={{ width: '300px' }}
-          src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png"
-          alt="Company Logo"
-        />
-      </div>
-      <h1 style={{ fontSize: '24px' }}>Genesys Bulk Skill Manager</h1>
-      {loading && <p>Loading users...</p>}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <Card>
-          <CardContent>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Users</h2>
-            {users.map(user => (
-              <div key={user.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <Checkbox
-                  checked={selectedUsers.includes(user.id)}
-                  onCheckedChange={() => handleUserSelect(user.id)}
-                />
-                <span>{user.name}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Skills</h2>
-            {selectedUsers.map(userId => (
-              <div key={userId}>
-                <h3 style={{ fontWeight: 'bold' }}>{users.find(u => u.id === userId)?.name}</h3>
-                {skills[userId]?.map((skill, index) => (
-                  <Input
-                    key={skill.id}
-                    value={skill.name}
-                    onChange={(e) => handleSkillChange(userId, index, e.target.value)}
-                    style={{ marginTop: '10px', padding: '12px', width: '100%', maxWidth: '400px', fontSize: '16px' }}
-                  />
-                ))}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-      <Button onClick={updateSkills} style={{ marginTop: '20px', padding: '12px', fontSize: '16px' }}>Update Skills</Button>
-    </div>
-  );
-};
 
-export default GenesysSkillManager;
+    document.getElementById("fetchSkills").addEventListener("click", fetchSkills);
+    document.getElementById("updateSkills").addEventListener("click", updateSkills);
+    document.addEventListener("DOMContentLoaded", fetchUsers);
+  </script>
+</body>
+</html>

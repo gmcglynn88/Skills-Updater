@@ -172,7 +172,7 @@
 
         if (skillId && !isNaN(proficiency)) {
           await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-            method: "PUT",
+            method: "POST",
             headers: {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"

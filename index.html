@@ -106,14 +106,61 @@
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
     }
 
+    async function updateSelectedSkills(token) {
+      console.log("Starting skill update...");
+
+      const selectedAgents = Array.from(document.querySelectorAll("input[type='checkbox']:checked"))
+        .map(checkbox => {
+          const userId = checkbox.dataset.userId;
+          const skillId = document.querySelector(`select[data-user-id="${userId}"]`).value;
+          const proficiency = document.querySelector(`input[data-user-id="${userId}"]`).value;
+
+          return skillId && proficiency ? { userId, skillId, proficiency: parseFloat(proficiency) } : null;
+        })
+        .filter(agent => agent !== null);
+
+      if (selectedAgents.length === 0) {
+        alert("No agents selected or missing skill/proficiency.");
+        return;
+      }
+
+      for (const agent of selectedAgents) {
+        try {
+          console.log(`Updating skill for agent ${agent.userId}:`, agent);
+
+          const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${agent.userId}/routingskills`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              id: agent.skillId,
+              proficiency: agent.proficiency
+            })
+          });
+
+          const responseData = await response.json();
+          console.log("Response from API:", responseData);
+
+          if (response.ok) {
+            alert(`✅ Successfully updated agent ${agent.userId}`);
+          } else {
+            alert(`❌ Failed to update agent ${agent.userId}: ${responseData.message || "Unknown error"}`);
+          }
+        } catch (error) {
+          console.error("❌ Error updating skills:", error);
+          alert(`❌ API Request Failed: ${error.message}`);
+        }
+      }
+    }
+
     async function fetchQueues(token) {
-      console.log("Fetching queues...");
       try {
         const response = await fetch("https://api.mypurecloud.ie/api/v2/routing/queues", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
-        console.log("Queues loaded:", data);
 
         const dropdown = document.getElementById('queueDropdown');
         dropdown.innerHTML = '<option value="">Select Queue</option>';
@@ -130,13 +177,11 @@
     }
 
     async function fetchSkills(token) {
-      console.log("Fetching skills...");
       try {
         const response = await fetch("https://api.mypurecloud.ie/api/v2/routing/skills", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const skillsData = await response.json();
-        console.log("Skills loaded:", skillsData);
 
         availableSkills = skillsData.entities.map(skill => ({
           id: skill.id,
@@ -154,13 +199,11 @@
         return;
       }
 
-      console.log("Fetching agents for queue:", queueId);
       try {
         const response = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const agents = await response.json();
-        console.log("Agents loaded:", agents);
 
         const tableBody = document.querySelector("#agentsTable tbody");
         tableBody.innerHTML = "";
@@ -185,22 +228,6 @@
         }
       } catch (error) {
         console.error("Error fetching agents:", error);
-      }
-    }
-
-    async function fetchAgentSkills(userId, token) {
-      try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const skillsData = await response.json();
-        
-        return skillsData.entities.length > 0
-          ? skillsData.entities.map(skill => skill.name).join(", ")
-          : "No Skills";
-      } catch (error) {
-        console.error(`Error fetching skills for ${userId}:`, error);
-        return "Error";
       }
     }
   </script>

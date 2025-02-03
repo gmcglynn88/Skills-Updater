@@ -1,0 +1,114 @@
+import React, { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+
+const GenesysSkillManager = () => {
+  const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [skills, setSkills] = useState({});
+  const [loading, setLoading] = useState(false);
+  const API_BASE = "https://api.mypurecloud.ie/api/v2";
+  
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+  
+  const fetchUsers = async () => {
+    setLoading(true);
+    const response = await fetch(`${API_BASE}/users`);
+    const data = await response.json();
+    setUsers(data.entities);
+    setLoading(false);
+  };
+  
+  const fetchSkills = async (userId) => {
+    const response = await fetch(`${API_BASE}/users/${userId}/routingskills`);
+    const data = await response.json();
+    return data.entities;
+  };
+  
+  const handleUserSelect = async (userId) => {
+    if (selectedUsers.includes(userId)) {
+      setSelectedUsers(selectedUsers.filter(id => id !== userId));
+      const updatedSkills = { ...skills };
+      delete updatedSkills[userId];
+      setSkills(updatedSkills);
+    } else {
+      setSelectedUsers([...selectedUsers, userId]);
+      const userSkills = await fetchSkills(userId);
+      setSkills(prev => ({ ...prev, [userId]: userSkills }));
+    }
+  };
+  
+  const handleSkillChange = (userId, skillIndex, newValue) => {
+    const updatedSkills = { ...skills };
+    updatedSkills[userId][skillIndex].name = newValue;
+    setSkills(updatedSkills);
+  };
+  
+  const updateSkills = async () => {
+    for (const userId of selectedUsers) {
+      for (const skill of skills[userId]) {
+        await fetch(`${API_BASE}/users/${userId}/routingskills/${skill.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(skill),
+        });
+      }
+    }
+    alert("Skills updated. Note: This overwrites existing skills.");
+  };
+  
+  return (
+    <div style={{ fontFamily: 'Proxima Nova, Arial, sans-serif', margin: '20px', padding: '20px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <img
+          style={{ width: '300px' }}
+          src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png"
+          alt="Company Logo"
+        />
+      </div>
+      <h1 style={{ fontSize: '24px' }}>Genesys Bulk Skill Manager</h1>
+      {loading && <p>Loading users...</p>}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <Card>
+          <CardContent>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Users</h2>
+            {users.map(user => (
+              <div key={user.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <Checkbox
+                  checked={selectedUsers.includes(user.id)}
+                  onCheckedChange={() => handleUserSelect(user.id)}
+                />
+                <span>{user.name}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Skills</h2>
+            {selectedUsers.map(userId => (
+              <div key={userId}>
+                <h3 style={{ fontWeight: 'bold' }}>{users.find(u => u.id === userId)?.name}</h3>
+                {skills[userId]?.map((skill, index) => (
+                  <Input
+                    key={skill.id}
+                    value={skill.name}
+                    onChange={(e) => handleSkillChange(userId, index, e.target.value)}
+                    style={{ marginTop: '10px', padding: '12px', width: '100%', maxWidth: '400px', fontSize: '16px' }}
+                  />
+                ))}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+      <Button onClick={updateSkills} style={{ marginTop: '20px', padding: '12px', fontSize: '16px' }}>Update Skills</Button>
+    </div>
+  );
+};
+
+export default GenesysSkillManager;

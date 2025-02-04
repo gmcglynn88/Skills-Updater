@@ -45,6 +45,8 @@
       border-radius: 5px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       margin: 20px;
+      max-width: 1200px;
+      margin: 20px auto;
     }
 
     label, select, input, button {
@@ -107,6 +109,7 @@
     .filters {
       display: flex;
       gap: 20px;
+      flex-wrap: wrap;
       margin-bottom: 20px;
     }
 
@@ -393,7 +396,7 @@
           const userId = checkbox.getAttribute("data-user-id");
           const skillSelect = row.querySelector("select");
           const skillId = skillSelect.value;
-          const proficiencyInput = row.querySelector("input[type='number']");
+          const proficiencyInput = row.querySelector("input[type='number']"); 
           const proficiency = proficiencyInput.value;
 
           if (skillId && proficiency) {
@@ -405,8 +408,8 @@
                   "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                  id: skillId, // Required: The ID of the skill to add/update
-                  proficiency: parseFloat(proficiency) // Required: The proficiency value (0.0 to 5.0)
+                  id: skillId, 
+                  proficiency: parseFloat(proficiency) 
                 })
               });
 

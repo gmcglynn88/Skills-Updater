@@ -6,13 +6,172 @@
   <title>Genesys Bulk Skill Manager</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;700&display=swap">
   <style>
-    /* Your existing CSS styles */
+    body {
+      font-family: 'Proxima Nova', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background-color: #63AB8F; /* Custom Teal */
+      color: white;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .logo {
+      height: 50px;
+      background-color: transparent;
+    }
+
+    .divider {
+      border: none;
+      height: 1px;
+      background-color: #ddd;
+      margin: 0;
+    }
+
+    .container {
+      padding: 20px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin: 20px;
+    }
+
+    label, select, input, button {
+      display: block;
+      margin: 10px 0;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select, input, button {
+      margin-top: 10px;
+      padding: 12px;
+      width: 100%;
+      max-width: 400px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #63AB8F; /* Custom Teal */
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #4d8c73; /* Darker Teal */
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #63AB8F; /* Custom Teal */
+      color: white;
+    }
+
+    td input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      text-align: center;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .filters > div {
+      flex: 1;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .checkbox-container label {
+      margin-left: 10px;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .export-button {
+      padding: 10px 20px;
+      background-color: #63AB8F;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+      width: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .negative {
+      background-color: pink;
+      color: red;
+    }
+
+    .search-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .search-container input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 300px;
+    }
+
+    .filters div h3 {
+      margin-bottom: 5px;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>Genesys Bulk Skill Manager</h1>
-    <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo">
+    <img class="logo" src="https://raw.githubusercontent.com/gmcglynn88/Management-Unit-Search/main/Consultinglogo%20(2).png" alt="Company Logo">
   </header>
   <div class="divider"></div>
 
@@ -42,7 +201,7 @@
   </div>
 
   <script>
-    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
+    const clientId = 'your-client-id'; // Replace with your actual client ID
     const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
     const responseType = 'token';
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
@@ -151,7 +310,7 @@
         const skillsData = await response.json();
 
         return skillsData.entities.length > 0
-          ? skillsData.entities.map(skill => skill.id).join(", ")
+          ? skillsData.entities.map(skill => skill.name).join(", ")
           : "No Skills";
       } catch (error) {
         console.error(`Error fetching skills for ${userId}:`, error);
@@ -172,30 +331,17 @@
       }
     }
 
-    async function fetchAllAgents(token) {
+    async function fetchAgentsBySkill(skillId, token) {
       try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users?pageSize=100`, {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users?routingSkills=${skillId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
         return data.entities || [];
       } catch (error) {
-        console.error("Error fetching all agents:", error);
+        console.error("Error fetching agents by skill:", error);
         return [];
       }
-    }
-
-    async function filterAgentsBySkill(agents, skillId, token) {
-      const filteredAgents = [];
-
-      for (const agent of agents) {
-        const skills = await fetchAgentSkills(agent.id, token);
-        if (skills.includes(skillId)) {
-          filteredAgents.push(agent);
-        }
-      }
-
-      return filteredAgents;
     }
 
     async function fetchAgents(token) {
@@ -208,17 +354,10 @@
       }
 
       let agents = [];
-      if (queueId && skillId) {
-        // Fetch agents by queue
-        const queueAgents = await fetchAgentsByQueue(queueId, token);
-        // Filter agents who have the selected skill
-        agents = await filterAgentsBySkill(queueAgents, skillId, token);
-      } else if (queueId) {
+      if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
       } else if (skillId) {
-        // Fetch all agents and filter by skill
-        const allAgents = await fetchAllAgents(token);
-        agents = await filterAgentsBySkill(allAgents, skillId, token);
+        agents = await fetchAgentsBySkill(skillId, token);
       }
 
       const tableBody = document.querySelector("#agentsTable tbody");

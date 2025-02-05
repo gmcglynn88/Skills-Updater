@@ -185,6 +185,9 @@
     <label for="skillDropdown">Select Skill:</label>
     <select id="skillDropdown"></select>
 
+    <label for="agentDropdown">Select Agent:</label>
+    <select id="agentDropdown"></select>
+
     <button id="fetchAgents">Get Agents</button>
 
     <table id="agentsTable">
@@ -227,6 +230,7 @@
       console.log("Initializing app...");
       await fetchQueues(token);
       await fetchAllSkills(token); // Fetch all skills with pagination
+      await fetchAllAgents(token); // Populate the agent dropdown
       populateSkillDropdown();
       document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
@@ -293,16 +297,25 @@
       }
     }
 
-    function populateSkillDropdown() {
-      const dropdown = document.getElementById('skillDropdown');
-      dropdown.innerHTML = '<option value="">Select Skill</option>';
+    async function fetchAllAgents(token) {
+      try {
+        const response = await fetch("https://api.mypurecloud.ie/api/v2/users", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
 
-      availableSkills.forEach(skill => {
-        let option = document.createElement("option");
-        option.value = skill.id;
-        option.textContent = skill.name;
-        dropdown.appendChild(option);
-      });
+        const dropdown = document.getElementById('agentDropdown');
+        dropdown.innerHTML = '<option value="">Select Agent</option>';
+
+        data.entities.forEach(agent => {
+          let option = document.createElement("option");
+          option.value = agent.id;
+          option.textContent = agent.name;
+          dropdown.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
     }
 
     async function fetchAgentSkills(userId, token) {
@@ -347,17 +360,33 @@
       }
     }
 
+    async function fetchAgentById(agentId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${agentId}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const agent = await response.json();
+        return [agent]; // Return as an array to maintain consistency with other agent fetching methods
+      } catch (error) {
+        console.error("Error fetching agent by ID:", error);
+        return [];
+      }
+    }
+
     async function fetchAgents(token) {
       const queueId = document.getElementById('queueDropdown').value;
       const skillId = document.getElementById('skillDropdown').value;
+      const agentId = document.getElementById('agentDropdown').value; // New line to get selected agent ID
 
-      if (!queueId && !skillId) {
-        alert('Please select a queue or a skill first.');
+      if (!queueId && !skillId && !agentId) {
+        alert('Please select a queue, skill, or agent first.');
         return;
       }
 
       let agents = [];
-      if (queueId) {
+      if (agentId) {
+        agents = await fetchAgentById(agentId, token);
+      } else if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
       } else if (skillId) {
         agents = await fetchAgentsBySkill(skillId, token);

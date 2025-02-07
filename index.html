@@ -6,7 +6,7 @@
   <title>IPI, Skills On The Fly</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;700&display=swap">
   <style>
-    /* Your existing CSS styles */
+    /* Add the CSS from above here */
   </style>
 </head>
 <body>
@@ -201,6 +201,19 @@
         option.textContent = skill.name;
         dropdown.appendChild(option);
       });
+    }
+
+    async function fetchAgentSkills(userId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities ? data.entities.map(skill => skill.name).join(", ") : "No Skills";
+      } catch (error) {
+        console.error(`Error fetching skills for ${userId}:`, error);
+        return "Error";
+      }
     }
 
     async function fetchAgentsForSkill(token) {

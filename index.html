@@ -18,7 +18,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 20px;
-            background-color: #63AB8F; /* Corrected color */
+            background-color: #006699; /* Original blue color */
             color: white;
         }
 
@@ -65,14 +65,14 @@
         }
 
         button {
-            background-color: #63AB8F; /* Corrected color */
+            background-color: #63AB8F; /* Original button color */
             color: white;
             cursor: pointer;
             transition: background-color 0.3s;
         }
 
         button:hover {
-            background-color: #4F8F6A; /* Slightly darker green */
+            background-color: #005577;
         }
 
         table {
@@ -88,8 +88,7 @@
         }
 
         th {
-            background-color: #63AB8F; /* Corrected color */
-            color: white;
+            background-color: #f5f5f5;
         }
 
         .table-container {
@@ -155,6 +154,8 @@
     <button id="fetchAgents">Get Agents</button>
 
     <div class="table-container">
+        <button id="selectAll">Select All</button>
+        <button id="applySkillToAll">Apply Skill to All Selected</button>
         <table id="agentsTable">
             <thead>
                 <tr>
@@ -200,15 +201,10 @@
         await fetchAllSkills(token); // Fetch all skills with pagination
         await fetchAllAgents(token); // Populate the agent dropdown
         populateSkillDropdown();
-
-        // Attach event listeners for the buttons
-        document.getElementById('fetchAgents').addEventListener('click', function() {
-            fetchAgents(token);
-        });
-        
-        document.getElementById('updateSkills').addEventListener('click', function() {
-            updateSelectedSkills(token);
-        });
+        document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
+        document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
+        document.getElementById('selectAll').addEventListener('click', selectAllAgents);
+        document.getElementById('applySkillToAll').addEventListener('click', () => applySkillToAll(token));
     }
 
     async function fetchQueues(token) {
@@ -415,6 +411,62 @@
                     }
                 } else {
                     console.error(`Missing skill ID or proficiency for user ${userId}`);
+                    updatesSuccessful = false;
+                }
+            }
+        }
+
+        if (updatesSuccessful) {
+            alert("Skills updated successfully!");
+        } else {
+            alert("Some skills failed to update. Check the console for details.");
+        }
+    }
+
+    function selectAllAgents() {
+        const checkboxes = document.querySelectorAll("#agentsTable tbody input[type='checkbox']");
+        checkboxes.forEach(checkbox => checkbox.checked = true);
+    }
+
+    async function applySkillToAll(token) {
+        const skillId = document.getElementById('skillDropdown').value;
+        const proficiency = prompt("Enter proficiency (0-5):");
+
+        if (!skillId || !proficiency) {
+            alert("Please select a skill and enter a proficiency value.");
+            return;
+        }
+
+        const rows = document.querySelectorAll("#agentsTable tbody tr");
+        let updatesSuccessful = true;
+
+        for (const row of rows) {
+            const checkbox = row.querySelector("input[type='checkbox']");
+            if (checkbox.checked) {
+                const userId = checkbox.getAttribute("data-user-id");
+
+                try {
+                    const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            id: skillId,
+                            proficiency: parseFloat(proficiency)
+                        })
+                    });
+
+                    if (response.ok) {
+                        console.log(`Skill updated for user ${userId}:`, await response.json());
+                    } else {
+                        const errorResponse = await response.json();
+                        console.error(`Failed to update skill for user ${userId}:`, errorResponse);
+                        updatesSuccessful = false;
+                    }
+                } catch (error) {
+                    console.error(`Error updating skill for user ${userId}:`, error);
                     updatesSuccessful = false;
                 }
             }

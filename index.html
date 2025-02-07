@@ -200,8 +200,15 @@
         await fetchAllSkills(token); // Fetch all skills with pagination
         await fetchAllAgents(token); // Populate the agent dropdown
         populateSkillDropdown();
-        document.getElementById('fetchAgents').addEventListener('click', () => fetchAgents(token));
-        document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
+
+        // Attach event listeners for the buttons
+        document.getElementById('fetchAgents').addEventListener('click', function() {
+            fetchAgents(token);
+        });
+        
+        document.getElementById('updateSkills').addEventListener('click', function() {
+            updateSelectedSkills(token);
+        });
     }
 
     async function fetchQueues(token) {

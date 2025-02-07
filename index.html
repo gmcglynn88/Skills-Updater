@@ -260,7 +260,7 @@
               ${availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
             </select>
           </td>
-          <td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td>
+          <td><input type="number" min="0" max="5" step="0.5" data-user-id="${agent.id}" placeholder="Proficiency"></td>
         `;
         tableBody.appendChild(row);
       }

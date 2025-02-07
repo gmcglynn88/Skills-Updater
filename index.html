@@ -6,7 +6,116 @@
   <title>Genesys Bulk Skill Manager</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;700&display=swap">
   <style>
-    /* Your existing CSS styles */
+    /* General body and layout styling */
+    body {
+      font-family: 'Proxima Nova', sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    header {
+      background-color: #006699;
+      color: white;
+      padding: 20px 0;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 32px;
+      margin: 0;
+    }
+
+    .logo {
+      width: 150px;
+      height: auto;
+      margin-top: 10px;
+    }
+
+    .container {
+      background-color: white;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 1000px;
+      margin-bottom: 30px;
+    }
+
+    .divider {
+      border-top: 1px solid #e0e0e0;
+      margin: 20px 0;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+      color: #333;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #006699;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #005577;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f5f5f5;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    input[type="number"] {
+      width: 100px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        width: 95%;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -14,32 +123,46 @@
     <h1>Genesys Bulk Skill Manager</h1>
     <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo">
   </header>
+
   <div class="divider"></div>
 
   <div class="container">
     <label for="queueDropdown">Select Queue:</label>
-    <select id="queueDropdown"></select>
+    <select id="queueDropdown">
+      <option value="">Select Queue</option>
+      <!-- Queue options will be populated dynamically -->
+    </select>
 
     <label for="skillDropdown">Select Skill:</label>
-    <select id="skillDropdown"></select>
+    <select id="skillDropdown">
+      <option value="">Select Skill</option>
+      <!-- Skill options will be populated dynamically -->
+    </select>
 
     <label for="agentDropdown">Select Agent:</label>
-    <select id="agentDropdown"></select>
+    <select id="agentDropdown">
+      <option value="">Select Agent</option>
+      <!-- Agent options will be populated dynamically -->
+    </select>
 
     <button id="fetchAgents">Get Agents</button>
 
-    <table id="agentsTable">
-      <thead>
-        <tr>
-          <th>Select</th>
-          <th>Agent</th>
-          <th>Current Skill</th>
-          <th>Skill Change</th>
-          <th>Proficiency</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="agentsTable">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Agent</th>
+            <th>Current Skill</th>
+            <th>Skill Change</th>
+            <th>Proficiency</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Agent data will be populated dynamically -->
+        </tbody>
+      </table>
+    </div>
 
     <button id="updateSkills">Update Selected Skills</button>
   </div>
@@ -163,61 +286,6 @@
         });
       } catch (error) {
         console.error("Error fetching agents:", error);
-      }
-    }
-
-    async function fetchAgentSkills(userId, token) {
-      try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const skillsData = await response.json();
-
-        return skillsData.entities.length > 0
-          ? skillsData.entities.map(skill => skill.name).join(", ")
-          : "No Skills";
-      } catch (error) {
-        console.error(`Error fetching skills for ${userId}:`, error);
-        return "Error";
-      }
-    }
-
-    async function fetchAgentsByQueue(queueId, token) {
-      try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const agents = await response.json();
-        return agents.entities || [];
-      } catch (error) {
-        console.error("Error fetching agents by queue:", error);
-        return [];
-      }
-    }
-
-    async function fetchAgentsBySkill(skillId, token) {
-      try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users?routingSkills=${skillId}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agents by skill:", error);
-        return [];
-      }
-    }
-
-    async function fetchAgentById(agentId, token) {
-      try {
-        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${agentId}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const agent = await response.json();
-        return [agent]; // Return as an array to maintain consistency with other agent fetching methods
-      } catch (error) {
-        console.error("Error fetching agent by ID:", error);
-        return [];
       }
     }
 

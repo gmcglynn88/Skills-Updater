@@ -89,7 +89,6 @@
             allQueues = allQueues.concat(data.entities); // Add the current page's queues to the list
           }
 
-          // Check if there's a next page
           nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
         }
 
@@ -122,7 +121,6 @@
             allSkills = allSkills.concat(data.entities); // Add the current page's skills to the list
           }
 
-          // Check if there's a next page
           nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
         }
 
@@ -226,7 +224,7 @@
     async function fetchAgents(token) {
       const queueId = document.getElementById('queueDropdown').value;
       const skillId = document.getElementById('skillDropdown').value;
-      const agentId = document.getElementById('agentDropdown').value; // New line to get selected agent ID
+      const agentId = document.getElementById('agentDropdown').value;
 
       if (!queueId && !skillId && !agentId) {
         alert('Please select a queue, skill, or agent first.');
@@ -236,6 +234,9 @@
       let agents = [];
       if (agentId) {
         agents = await fetchAgentById(agentId, token);
+      } else if (queueId && skillId) {
+        const agentsByQueue = await fetchAgentsByQueue(queueId, token);
+        agents = agentsByQueue.filter(agent => agent.routingSkills.some(skill => skill.id === skillId));
       } else if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
       } else if (skillId) {
@@ -275,7 +276,7 @@
           const userId = checkbox.getAttribute("data-user-id");
           const skillSelect = row.querySelector("select");
           const skillId = skillSelect.value;
-          const proficiencyInput = row.querySelector("input[type='number']"); 
+          const proficiencyInput = row.querySelector("input[type='number']");
           const proficiency = proficiencyInput.value;
 
           if (skillId && proficiency) {

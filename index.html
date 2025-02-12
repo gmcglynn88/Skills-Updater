@@ -169,6 +169,14 @@
       border-radius: 5px;
       cursor: pointer;
       text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dropdown-checkbox .dropdown-button::after {
+      content: "▼";
+      font-size: 12px;
     }
 
     .dropdown-checkbox .dropdown-content {
@@ -181,6 +189,7 @@
       max-height: 200px;
       overflow-y: auto;
       z-index: 1;
+      margin-top: 5px;
     }
 
     .dropdown-checkbox .dropdown-content label {

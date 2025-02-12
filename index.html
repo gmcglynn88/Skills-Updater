@@ -6,153 +6,7 @@
   <title>IPI Skills On The Fly</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;700&display=swap">
   <style>
-    /* === CSS Styles === */
-    body {
-      font-family: 'Proxima Nova', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f0f0;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background-color: #63AB8F; /* Custom Teal */
-      color: white;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 24px;
-    }
-
-    .logo {
-      height: 50px;
-      background-color: transparent;
-    }
-
-    .divider {
-      border: none;
-      height: 1px;
-      background-color: #ddd;
-      margin: 0;
-    }
-
-    .container {
-      padding: 20px;
-      background-color: white;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      margin: 20px;
-      max-width: 1200px;
-      margin: 20px auto;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .tab-button {
-      padding: 10px 20px;
-      background-color: #63AB8F;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .tab-button.active {
-      background-color: #4d8c73; /* Darker Teal */
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    label, select, input, button {
-      display: block;
-      margin: 10px 0;
-    }
-
-    label {
-      font-weight: bold;
-    }
-
-    select, input, button {
-      margin-top: 10px;
-      padding: 12px;
-      width: 100%;
-      max-width: 400px;
-      font-size: 16px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-    }
-
-    button {
-      background-color: #63AB8F; /* Custom Teal */
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #4d8c73; /* Darker Teal */
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-      word-wrap: break-word; /* Ensure content wraps if it's too long */
-    }
-
-    th {
-      background-color: #63AB8F; /* Custom Teal */
-      color: white;
-    }
-
-    td div {
-      margin-bottom: 5px; /* Adds space between each line */
-      font-size: 14px; /* Adjust the font size as needed */
-    }
-
-    .select-all-button {
-      margin-bottom: 10px;
-    }
-
-    /* Success and failure message styles */
-    .message {
-      padding: 15px;
-      border-radius: 5px;
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .success {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .error {
-      background-color: #f44336;
-      color: white;
-    }
+    /* Your existing CSS styles */
   </style>
 </head>
 <body>
@@ -177,11 +31,6 @@
       <button id="fetchAgentsForSkill">Get Agents</button>
       <button class="select-all-button" id="selectAllAgentsForSkill">Select All</button>
 
-      <label for="agentDropdown">Select Agent:</label>
-      <select id="agentDropdown">
-        <option value="">Select Agent</option>
-      </select>
-
       <table id="agentsTableForSkill">
         <thead>
           <tr>
@@ -200,12 +49,198 @@
 
     <!-- Queue Assignment Tab -->
     <div id="queue-tab" class="tab-content">
-      <!-- Same as before -->
+      <label for="queueDropdown">Select Queue:</label>
+      <select id="queueDropdown"></select>
+
+      <button id="fetchAgentsForQueue">Get Agents</button>
+      <button class="select-all-button" id="selectAllAgentsForQueue">Select All</button>
+
+      <table id="agentsTableForQueue">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>Agent</th>
+            <th>Current Queue</th>
+            <th>Queue Change</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <button id="processQueueAction">Process Action</button>
+
+      <!-- Add/Delete Queues Section -->
+      <div>
+        <label for="actionDropdown">Choose Action:</label>
+        <select id="actionDropdown">
+          <option value="">Select Action</option>
+          <option value="add">Add Queue</option>
+          <option value="delete">Delete Queue</option>
+        </select>
+      </div>
+
+      <!-- Success/Failure Messages -->
+      <div id="messageBox" class="message" style="display:none;"></div>
     </div>
   </div>
 
   <script>
-    // Previous code...
+    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
+    const responseType = 'token';
+    const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    let availableSkills = [];
+    let availableQueues = [];
+    let token = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      token = params.get('access_token');
+
+      if (!token) {
+        window.location.href = oauthUrl;
+      } else {
+        console.log("Token retrieved:", token); // Debugging log
+        initializeApp(token);
+      }
+
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      document.getElementById('fetchAgentsForSkill').addEventListener('click', () => fetchAgentsForSkill(token));
+      document.getElementById('fetchAgentsForQueue').addEventListener('click', () => fetchAgentsForQueue(token));
+      document.getElementById('selectAllAgentsForSkill').addEventListener('click', () => selectAllAgents('skill'));
+      document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => selectAllAgents('queue'));
+      document.getElementById('updateSkills').addEventListener('click', () => updateSkills(token));
+      document.getElementById('processQueueAction').addEventListener('click', () => processQueueAction(token));
+
+      // Tab switching
+      const tabButtons = document.querySelectorAll('.tab-button');
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          // Remove active class from all buttons and contents
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          const tabContents = document.querySelectorAll('.tab-content');
+          tabContents.forEach(content => content.classList.remove('active'));
+
+          // Add active class to the clicked button and corresponding content
+          button.classList.add('active');
+          const tabId = button.getAttribute('data-tab');
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+    }
+
+    async function initializeApp(token) {
+      console.log("Initializing app...");
+      await fetchQueues(token);
+      await fetchAllSkills(token); // Fetch all skills with pagination
+      populateSkillDropdown();
+    }
+
+    async function fetchQueues(token) {
+      try {
+        let allQueues = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/queues?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Queues API response:", data); // Debugging log
+
+          if (data.entities) {
+            allQueues = allQueues.concat(data.entities); // Add the current page's queues to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableQueues = allQueues;
+        const dropdown = document.getElementById('queueDropdown');
+        dropdown.innerHTML = '<option value="">Select Queue</option>';
+
+        allQueues.forEach(queue => {
+          let option = document.createElement("option");
+          option.value = queue.id;
+          option.textContent = queue.name;
+          dropdown.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching queues:", error);
+      }
+    }
+
+    async function fetchAllSkills(token) {
+      try {
+        let allSkills = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/skills?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Skills API response:", data); // Debugging log
+
+          if (data.entities) {
+            allSkills = allSkills.concat(data.entities); // Add the current page's skills to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableSkills = allSkills;
+        populateSkillDropdown();
+      } catch (error) {
+        console.error("Error fetching skills:", error);
+      }
+    }
+
+    function populateSkillDropdown() {
+      const dropdown = document.getElementById('skillDropdown');
+      dropdown.innerHTML = '<option value="">Select Skill</option>';
+
+      availableSkills.forEach(skill => {
+        let option = document.createElement("option");
+        option.value = skill.id;
+        option.textContent = skill.name;
+        dropdown.appendChild(option);
+      });
+    }
+
+    async function fetchAgentSkills(userId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities ? data.entities.map(skill => skill.name).join(", ") : "No Skills";
+      } catch (error) {
+        console.error(`Error fetching skills for ${userId}:`, error);
+        return "Error";
+      }
+    }
+
+    async function fetchAgentQueues(userId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/queues`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities ? data.entities.map(queue => queue.name).join(", ") : "No Queues";
+      } catch (error) {
+        console.error(`Error fetching queues for ${userId}:`, error);
+        return "Error";
+      }
+    }
 
     async function fetchAgentsForSkill(token) {
       const skillId = document.getElementById('skillDropdown').value;
@@ -217,8 +252,20 @@
 
       const agents = await fetchAgentsBySkill(skillId, token);
       console.log("Agents for skill:", agents); // Debugging log
-      populateAgentDropdown(agents);  // Populate dropdown with agents
       populateTable(agents, 'skill', token);
+    }
+
+    async function fetchAgentsForQueue(token) {
+      const queueId = document.getElementById('queueDropdown').value;
+
+      if (!queueId) {
+        alert('Please select a queue first.');
+        return;
+      }
+
+      const agents = await fetchAgentsByQueue(queueId, token);
+      console.log("Agents for queue:", agents); // Debugging log
+      populateTable(agents, 'queue', token);
     }
 
     async function fetchAgentsBySkill(skillId, token) {
@@ -235,19 +282,183 @@
       }
     }
 
-    function populateAgentDropdown(agents) {
-      const dropdown = document.getElementById('agentDropdown');
-      dropdown.innerHTML = '<option value="">Select Agent</option>';
-
-      agents.forEach(agent => {
-        let option = document.createElement("option");
-        option.value = agent.id;
-        option.textContent = agent.name;
-        dropdown.appendChild(option);
-      });
+    async function fetchAgentsByQueue(queueId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        console.log("Agents by queue API response:", data); // Debugging log
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agents by queue:", error);
+        return [];
+      }
     }
 
-    // Remaining code...
+    async function populateTable(agents, type, token) {
+      const tableBody = document.querySelector(`#agentsTableFor${type.charAt(0).toUpperCase() + type.slice(1)} tbody`);
+      tableBody.innerHTML = "";
+
+      for (const agent of agents) {
+        const currentSkills = type === 'skill' ? await fetchAgentSkills(agent.id, token) : "";
+        const currentQueues = type === 'queue' ? await fetchAgentQueues(agent.id, token) : "";
+
+        let row = document.createElement("tr");
+        
+        // Handle skills and queues line by line
+        let currentQueueList = type === 'queue' ? currentQueues.split(',').map(queue => `<div>${queue.trim()}</div>`).join('') : '';
+        let currentSkillList = type === 'skill' ? currentSkills.split(',').map(skill => `<div>${skill.trim()}</div>`).join('') : '';
+
+        row.innerHTML = `
+          <td><input type="checkbox" class="select-agent" data-user-id="${agent.id}"></td>
+          <td>${agent.name}</td>
+          <td>${type === 'skill' ? currentSkillList : currentQueueList}</td>
+          <td>
+            ${type === 'skill' ? ` 
+              <select data-user-id="${agent.id}">
+                <option value="">Select Skill</option>
+                ${availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
+              </select>
+            ` : ` 
+              <select data-user-id="${agent.id}">
+                <option value="">Select Queue</option>
+                ${availableQueues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}
+              </select>
+            `}
+          </td>
+          ${type === 'skill' ? `
+            <td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td>
+          ` : ''}
+        `;
+        tableBody.appendChild(row);
+      }
+    }
+
+    function selectAllAgents(type) {
+      const checkboxes = document.querySelectorAll(`#agentsTableFor${type.charAt(0).toUpperCase() + type.slice(1)} tbody input[type='checkbox']`);
+      checkboxes.forEach(checkbox => checkbox.checked = true);
+    }
+
+    async function updateSkills(token) {
+      const selectedAgents = [];
+      const skillUpdates = [];
+
+      // Get selected agents and their skill changes
+      const checkboxes = document.querySelectorAll("#agentsTableForSkill tbody input[type='checkbox']:checked");
+      checkboxes.forEach(checkbox => {
+        const userId = checkbox.getAttribute('data-user-id');
+        const skillSelect = document.querySelector(`select[data-user-id="${userId}"]`);
+        const proficiencyInput = document.querySelector(`input[data-user-id="${userId}"]`);
+
+        if (skillSelect.value && proficiencyInput.value) {
+          selectedAgents.push(userId);
+          skillUpdates.push({
+            userId,
+            skillId: skillSelect.value,
+            proficiency: proficiencyInput.value
+          });
+        }
+      });
+
+      if (selectedAgents.length === 0) {
+        alert('Please select at least one agent and specify a skill and proficiency.');
+        return;
+      }
+
+      try {
+        const updatePromises = skillUpdates.map(update => {
+          return fetch(`https://api.mypurecloud.ie/api/v2/users/${update.userId}/routingskills`, {
+            method: 'POST',
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              skillId: update.skillId,
+              proficiency: parseFloat(update.proficiency)
+            })
+          });
+        });
+
+        const results = await Promise.all(updatePromises);
+        const allSuccessful = results.every(response => response.ok);
+
+        if (allSuccessful) {
+          showMessage('success', 'Skills updated successfully.');
+        } else {
+          showMessage('error', 'Some skills failed to update.');
+        }
+      } catch (error) {
+        console.error("Error updating skills:", error);
+        showMessage('error', 'An error occurred while updating skills.');
+      }
+    }
+
+    async function processQueueAction(token) {
+      const action = document.getElementById('actionDropdown').value;
+      const selectedAgents = [];
+
+      // Get selected agents
+      const checkboxes = document.querySelectorAll("#agentsTableForQueue tbody input[type='checkbox']:checked");
+      checkboxes.forEach(checkbox => selectedAgents.push(checkbox.getAttribute('data-user-id')));
+
+      if (selectedAgents.length === 0) {
+        alert('Please select at least one agent');
+        return;
+      }
+
+      const queueId = document.getElementById('queueDropdown').value;
+
+      if (!queueId) {
+        alert('Please select a queue');
+        return;
+      }
+
+      const body = selectedAgents.map(agentId => ({ id: agentId }));
+      const queryParams = action === 'delete' ? '?delete=true' : '';
+
+      const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members${queryParams}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+          showMessage('success', `Queue members updated successfully: ${action}`);
+        } else {
+          const errorResponse = await response.json();
+          showMessage('error', `Error updating queue members: ${errorResponse.message}`);
+        }
+      } catch (error) {
+        console.error("Error processing queue action:", error);
+        showMessage('error', 'An error occurred while processing the action.');
+      }
+    }
+
+    function showMessage(type, message) {
+      const messageBox = document.getElementById('messageBox');
+      messageBox.style.display = 'block';
+
+      if (type === 'success') {
+        messageBox.className = 'message success';
+      } else if (type === 'error') {
+        messageBox.className = 'message error';
+      }
+
+      messageBox.innerHTML = message;
+
+      // Optionally, hide the message after a few seconds
+      setTimeout(() => {
+        messageBox.style.display = 'none';
+      }, 5000);
+    }
   </script>
 </body>
 </html>

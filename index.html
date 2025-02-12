@@ -154,14 +154,47 @@
       color: white;
     }
 
-    /* Multi-select dropdown styling */
-    .multiselect {
+    /* Custom dropdown with checkboxes */
+    .dropdown-checkbox {
+      position: relative;
+      display: inline-block;
       width: 100%;
       max-width: 400px;
     }
 
-    .multiselect option {
+    .dropdown-checkbox .dropdown-button {
+      padding: 12px;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .dropdown-checkbox .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1;
+    }
+
+    .dropdown-checkbox .dropdown-content label {
+      display: block;
       padding: 10px;
+      cursor: pointer;
+    }
+
+    .dropdown-checkbox .dropdown-content label:hover {
+      background-color: #f0f0f0;
+    }
+
+    .dropdown-checkbox.active .dropdown-content {
+      display: block;
     }
   </style>
 </head>
@@ -182,9 +215,12 @@
     <!-- Skill Assignment Tab -->
     <div id="skill-tab" class="tab-content active">
       <label for="agentDropdownSkill">Select Agents:</label>
-      <select id="agentDropdownSkill" class="multiselect" multiple>
-        <!-- Agents will be populated here -->
-      </select>
+      <div class="dropdown-checkbox" id="agentDropdownSkill">
+        <div class="dropdown-button">Select Agents</div>
+        <div class="dropdown-content">
+          <!-- Agents will be populated here -->
+        </div>
+      </div>
 
       <label for="skillDropdown">Select Skill:</label>
       <select id="skillDropdown"></select>
@@ -211,9 +247,12 @@
     <!-- Queue Assignment Tab -->
     <div id="queue-tab" class="tab-content">
       <label for="agentDropdownQueue">Select Agents:</label>
-      <select id="agentDropdownQueue" class="multiselect" multiple>
-        <!-- Agents will be populated here -->
-      </select>
+      <div class="dropdown-checkbox" id="agentDropdownQueue">
+        <div class="dropdown-button">Select Agents</div>
+        <div class="dropdown-content">
+          <!-- Agents will be populated here -->
+        </div>
+      </div>
 
       <label for="queueDropdown">Select Queue:</label>
       <select id="queueDropdown"></select>
@@ -308,17 +347,23 @@
     }
 
     function populateAgentDropdowns() {
-      const skillDropdown = document.getElementById('agentDropdownSkill');
-      const queueDropdown = document.getElementById('agentDropdownQueue');
+      const skillDropdown = document.querySelector('#agentDropdownSkill .dropdown-content');
+      const queueDropdown = document.querySelector('#agentDropdownQueue .dropdown-content');
       skillDropdown.innerHTML = '';
       queueDropdown.innerHTML = '';
 
       allAgents.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.id;
-        option.textContent = agent.name;
-        skillDropdown.appendChild(option.cloneNode(true));
-        queueDropdown.appendChild(option.cloneNode(true));
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" value="${agent.id}"> ${agent.name}`;
+        skillDropdown.appendChild(label.cloneNode(true));
+        queueDropdown.appendChild(label.cloneNode(true));
+      });
+
+      // Toggle dropdown on button click
+      document.querySelectorAll('.dropdown-button').forEach(button => {
+        button.addEventListener('click', () => {
+          button.parentElement.classList.toggle('active');
+        });
       });
     }
 
@@ -389,7 +434,7 @@
     }
 
     async function fetchAgentsForSkill(token) {
-      const selectedAgentIds = Array.from(document.getElementById('agentDropdownSkill').selectedOptions).map(opt => opt.value);
+      const selectedAgentIds = Array.from(document.querySelectorAll('#agentDropdownSkill input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
       const skillId = document.getElementById('skillDropdown').value;
 
       if (!skillId || selectedAgentIds.length === 0) {
@@ -402,7 +447,7 @@
     }
 
     async function fetchAgentsForQueue(token) {
-      const selectedAgentIds = Array.from(document.getElementById('agentDropdownQueue').selectedOptions).map(opt => opt.value);
+      const selectedAgentIds = Array.from(document.querySelectorAll('#agentDropdownQueue input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
       const queueId = document.getElementById('queueDropdown').value;
 
       if (!queueId || selectedAgentIds.length === 0) {

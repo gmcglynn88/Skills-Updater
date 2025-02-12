@@ -297,7 +297,6 @@
       document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => selectAllAgents('queue'));
       document.getElementById('processQueueAction').addEventListener('click', function() {
         console.log("Process Action button clicked"); // Debugging log
-        const token = getTokenFromLocalStorage(); // Assuming you have a method to get the token
         processQueueAction(token); // Call the function when the button is clicked
       });
 

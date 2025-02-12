@@ -153,6 +153,18 @@
       background-color: #f44336;
       color: white;
     }
+
+    .search-container {
+      margin-bottom: 20px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
   </style>
 </head>
 <body>
@@ -200,6 +212,11 @@
 
       <button id="fetchAgentsForQueue">Get Agents</button>
       <button class="select-all-button" id="selectAllAgentsForQueue">Select All</button>
+
+      <!-- Search Bar for Agent -->
+      <div class="search-container">
+        <input type="text" id="searchAgent" class="search-input" placeholder="Search for an agent...">
+      </div>
 
       <table id="agentsTableForQueue">
         <thead>
@@ -262,6 +279,7 @@
       document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => selectAllAgents('queue'));
       document.getElementById('processQueueAction').addEventListener('click', () => processQueueAction(token));
 
+      document.getElementById('searchAgent').addEventListener('input', () => searchAgents());
       // Tab switching
       const tabButtons = document.querySelectorAll('.tab-button');
       tabButtons.forEach(button => {
@@ -504,9 +522,13 @@
         return;
       }
 
+      // Construct the body for the request
       const body = selectedAgents.map(agentId => ({ id: agentId }));
+
+      // Conditionally append the delete=true query parameter only for deletion
       const queryParams = action === 'delete' ? '?delete=true' : '';
 
+      // URL for the API call
       const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members${queryParams}`;
 
       try {
@@ -547,6 +569,20 @@
       setTimeout(() => {
         messageBox.style.display = 'none';
       }, 5000);
+    }
+
+    function searchAgents() {
+      const searchTerm = document.getElementById('searchAgent').value.toLowerCase();
+      const rows = document.querySelectorAll('#agentsTableForQueue tbody tr');
+
+      rows.forEach(row => {
+        const agentName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        if (agentName.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
     }
   </script>
 </body>

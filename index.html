@@ -208,12 +208,13 @@
             <th>Agent</th>
             <th>Current Queue</th>
             <th>Queue Change</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
 
-      <button id="updateQueues">Update Selected Queues</button>
+      <button id="processQueueAction">Process Action</button>
 
       <!-- Add/Delete Queues Section -->
       <div>
@@ -223,7 +224,6 @@
           <option value="add">Add Queue</option>
           <option value="delete">Delete Queue</option>
         </select>
-        <button id="processQueueAction">Process Action</button>
       </div>
 
       <!-- Success/Failure Messages -->
@@ -455,7 +455,7 @@
         let currentSkillList = type === 'skill' ? currentSkills.split(',').map(skill => `<div>${skill.trim()}</div>`).join('') : '';
 
         row.innerHTML = `
-          <td><input type="checkbox" data-user-id="${agent.id}"></td>
+          <td><input type="checkbox" class="select-agent" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
           <td>${type === 'skill' ? currentSkillList : currentQueueList}</td>
           <td>
@@ -482,6 +482,56 @@
     function selectAllAgents(type) {
       const checkboxes = document.querySelectorAll(`#agentsTableFor${type.charAt(0).toUpperCase() + type.slice(1)} tbody input[type='checkbox']`);
       checkboxes.forEach(checkbox => checkbox.checked = true);
+    }
+
+    async function processQueueAction(token) {
+      const action = document.getElementById('actionDropdown').value;
+      const selectedAgents = [];
+
+      // Get selected agents
+      const checkboxes = document.querySelectorAll("#agentsTableForQueue tbody input[type='checkbox']:checked");
+      checkboxes.forEach(checkbox => selectedAgents.push(checkbox.getAttribute('data-user-id')));
+
+      if (selectedAgents.length === 0) {
+        alert('Please select at least one agent');
+        return;
+      }
+
+      const queueId = document.getElementById('queueDropdown').value;
+
+      if (!queueId) {
+        alert('Please select a queue');
+        return;
+      }
+
+      const queryParams = action === 'delete' ? '?delete=true' : '';
+
+      const body = {
+        "id": selectedAgents
+      };
+
+      const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members${queryParams}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+          showMessage('success', `Queue members updated successfully: ${action}`);
+        } else {
+          const errorResponse = await response.json();
+          showMessage('error', `Error updating queue members: ${errorResponse.message}`);
+        }
+      } catch (error) {
+        console.error("Error processing queue action:", error);
+        showMessage('error', 'An error occurred while processing the action.');
+      }
     }
 
     function showMessage(type, message) {

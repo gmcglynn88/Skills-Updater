@@ -154,7 +154,10 @@
       color: white;
     }
 
-    .search-container {
+    /* Layout for Agent and Queue Selection on the same line */
+    .selection-container {
+      display: flex;
+      gap: 20px; /* Add some space between the dropdowns */
       margin-bottom: 20px;
     }
 
@@ -164,6 +167,10 @@
       font-size: 16px;
       border-radius: 5px;
       border: 1px solid #ddd;
+    }
+
+    select {
+      width: 100%;
     }
   </style>
 </head>
@@ -207,19 +214,26 @@
 
     <!-- Queue Assignment Tab -->
     <div id="queue-tab" class="tab-content">
-      <label for="queueDropdown">Select Queue:</label>
-      <select id="queueDropdown"></select>
+      <div class="selection-container">
+        <!-- Agent Dropdown -->
+        <div class="search-container">
+          <label for="agentDropdown">Select Agent:</label>
+          <select id="agentDropdown">
+            <option value="">Select Agent</option>
+          </select>
+        </div>
+        
+        <!-- Queue Dropdown -->
+        <div class="search-container">
+          <label for="queueDropdown">Select Queue:</label>
+          <select id="queueDropdown">
+            <option value="">Select Queue</option>
+          </select>
+        </div>
+      </div>
 
       <button id="fetchAgentsForQueue">Get Agents</button>
       <button class="select-all-button" id="selectAllAgentsForQueue">Select All</button>
-
-      <!-- Dropdown for searching/selecting agents -->
-      <div class="search-container">
-        <label for="agentDropdown">Select Agent:</label>
-        <select id="agentDropdown">
-          <option value="">Select Agent</option>
-        </select>
-      </div>
 
       <table id="agentsTableForQueue">
         <thead>

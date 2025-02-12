@@ -203,7 +203,6 @@
   </div>
 
   <script>
-    // === JavaScript Code ===
     const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
     const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
     const responseType = 'token';
@@ -411,11 +410,12 @@
 
         let row = document.createElement("tr");
         row.innerHTML = `
+
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
           <td>${type === 'skill' ? currentSkills : agent.routingSkills?.map(skill => skill.name).join(", ") || "No Skills"}</td>
           <td>
-            ${type === 'skill' ? `
+            ${type === 'skill' ? ` 
               <select data-user-id="${agent.id}">
                 <option value="">Select Skill</option>
                 ${availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}

@@ -525,8 +525,8 @@
       // Construct the body for the request
       const body = selectedAgents.map(agentId => ({ id: agentId }));
 
-      // Conditionally append the delete=true query parameter only for deletion
-      const queryParams = action === 'delete' ? '?delete=true' : '';
+      // Conditionally append the delete query parameter
+      const queryParams = action === 'delete' ? '?delete=true' : '?delete=false'; // For "add" we explicitly use delete=false
 
       // URL for the API call
       const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members${queryParams}`;

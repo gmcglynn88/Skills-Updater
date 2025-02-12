@@ -504,11 +504,8 @@
         return;
       }
 
+      const body = selectedAgents.map(agentId => ({ id: agentId }));
       const queryParams = action === 'delete' ? '?delete=true' : '';
-
-      const body = {
-        "id": selectedAgents
-      };
 
       const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members${queryParams}`;
 

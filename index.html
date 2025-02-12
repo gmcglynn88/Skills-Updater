@@ -423,148 +423,51 @@
       }
     }
 
-    async function populateTable(agents, type, token) {
-      const tableBody = document.querySelector(`#agentsTableFor${type.charAt(0).toUpperCase() + type.slice(1)} tbody`);
-      tableBody.innerHTML = "";
+    async function processQueueAction(token) {
+      const action = document.getElementById('actionDropdown').value;
+      const queueId = document.getElementById('queueDropdown').value;
 
-      for (const agent of agents) {
-        const currentSkills = type === 'skill' ? await fetchAgentSkills(agent.id, token) : "";
-        const currentQueues = type === 'queue' ? await fetchAgentQueues(agent.id, token) : "";
-
-        let row = document.createElement("tr");
-        
-        // Handle skills and queues line by line
-        let currentQueueList = type === 'queue' ? currentQueues.split(',').map(queue => `<div>${queue.trim()}</div>`).join('') : '';
-        let currentSkillList = type === 'skill' ? currentSkills.split(',').map(skill => `<div>${skill.trim()}</div>`).join('') : '';
-
-        row.innerHTML = `
-          <td><input type="checkbox" data-user-id="${agent.id}"></td>
-          <td>${agent.name}</td>
-          <td>${type === 'skill' ? currentSkillList : currentQueueList}</td>
-          <td>
-            ${type === 'skill' ? ` 
-              <select data-user-id="${agent.id}">
-                <option value="">Select Skill</option>
-                ${availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}
-              </select>
-            ` : `
-              <select data-user-id="${agent.id}">
-                <option value="">Select Queue</option>
-                ${availableQueues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}
-              </select>
-            `}
-          </td>
-          ${type === 'skill' ? `
-            <td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td>
-          ` : ''}
-        `;
-        tableBody.appendChild(row);
+      if (!action || !queueId) {
+        alert('Please select both action and queue');
+        return;
       }
-    }
 
-    function selectAllAgents(type) {
-      const checkboxes = document.querySelectorAll(`#agentsTableFor${type.charAt(0).toUpperCase() + type.slice(1)} tbody input[type='checkbox']`);
-      checkboxes.forEach(checkbox => checkbox.checked = true);
-    }
+      const selectedAgents = [];
+      const checkboxes = document.querySelectorAll(`#agentsTableForQueue tbody input[type='checkbox']:checked`);
+      checkboxes.forEach(checkbox => selectedAgents.push(checkbox.getAttribute('data-user-id')));
 
-    async function updateSelectedSkills(token) {
-      const rows = document.querySelectorAll("#agentsTableForSkill tbody tr");
-      let updatesSuccessful = true;
+      if (selectedAgents.length === 0) {
+        alert('Please select at least one agent');
+        return;
+      }
 
-      for (const row of rows) {
-        const checkbox = row.querySelector("input[type='checkbox']");
-        if (checkbox.checked) {
-          const userId = checkbox.getAttribute("data-user-id");
-          const skillSelect = row.querySelector("select");
-          const skillId = skillSelect.value;
-          const proficiencyInput = row.querySelector("input[type='number']");
-          const proficiency = proficiencyInput.value;
+      const body = {
+        "id": selectedAgents
+      };
 
-          if (skillId && proficiency) {
-            try {
-              const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${token}`,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                  id: skillId,
-                  proficiency: parseFloat(proficiency)
-                })
-              });
+      const queryParams = action === 'delete' ? '?delete=true' : '';
+      const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members${queryParams}`;
 
-              if (response.ok) {
-                console.log(`Skill updated for user ${userId}:`, await response.json());
-              } else {
-                const errorResponse = await response.json();
-                console.error(`Failed to update skill for user ${userId}:`, errorResponse);
-                updatesSuccessful = false;
-              }
-            } catch (error) {
-              console.error(`Error updating skill for user ${userId}:`, error);
-              updatesSuccessful = false;
-            }
-          } else {
-            console.error(`Missing skill ID or proficiency for user ${userId}`);
-            updatesSuccessful = false;
-          }
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+          alert(`Queue members updated successfully: ${action}`);
+        } else {
+          const errorResponse = await response.json();
+          console.error(`Error updating queue members:`, errorResponse);
+          alert('Error updating queue members. Check the console for details.');
         }
-      }
-
-      if (updatesSuccessful) {
-        alert("Skills updated successfully!");
-      } else {
-        alert("Some skills failed to update. Check the console for details.");
-      }
-    }
-
-    async function updateSelectedQueues(token) {
-      const rows = document.querySelectorAll("#agentsTableForQueue tbody tr");
-      let updatesSuccessful = true;
-
-      for (const row of rows) {
-        const checkbox = row.querySelector("input[type='checkbox']");
-        if (checkbox.checked) {
-          const userId = checkbox.getAttribute("data-user-id");
-          const queueSelect = row.querySelector("select");
-          const queueId = queueSelect.value;
-
-          if (queueId) {
-            try {
-              const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/queues`, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${token}`,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                  id: queueId
-                })
-              });
-
-              if (response.ok) {
-                console.log(`Queue updated for user ${userId}:`, await response.json());
-              } else {
-                const errorResponse = await response.json();
-                console.error(`Failed to update queue for user ${userId}:`, errorResponse);
-                updatesSuccessful = false;
-              }
-            } catch (error) {
-              console.error(`Error updating queue for user ${userId}:`, error);
-              updatesSuccessful = false;
-            }
-          } else {
-            console.error(`Missing queue ID for user ${userId}`);
-            updatesSuccessful = false;
-          }
-        }
-      }
-
-      if (updatesSuccessful) {
-        alert("Queues updated successfully!");
-      } else {
-        alert("Some queues failed to update. Check the console for details.");
+      } catch (error) {
+        console.error(`Error processing queue action:`, error);
+        alert('An error occurred while processing the action.');
       }
     }
   </script>

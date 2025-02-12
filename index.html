@@ -254,7 +254,105 @@
 
       // Attach event listener for the Process Action button
       document.getElementById('processQueueAction').addEventListener('click', () => processQueueAction(token));
+
+      // Tab switching functionality
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          // Remove active class from all buttons and contents
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+
+          // Add active class to the clicked button and corresponding content
+          const tabId = button.getAttribute('data-tab');
+          button.classList.add('active');
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
     });
+
+    async function initializeApp(token) {
+      console.log("Initializing app...");
+      await fetchQueues(token);
+      await fetchAllSkills(token); // Fetch all skills with pagination
+      populateSkillDropdown();
+    }
+
+    async function fetchQueues(token) {
+      try {
+        let allQueues = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/queues?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Queues API response:", data); // Debugging log
+
+          if (data.entities) {
+            allQueues = allQueues.concat(data.entities); // Add the current page's queues to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableQueues = allQueues;
+        const dropdown = document.getElementById('queueDropdown');
+        dropdown.innerHTML = '<option value="">Select Queue</option>';
+
+        allQueues.forEach(queue => {
+          let option = document.createElement("option");
+          option.value = queue.id;
+          option.textContent = queue.name;
+          dropdown.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching queues:", error);
+      }
+    }
+
+    async function fetchAllSkills(token) {
+      try {
+        let allSkills = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/skills?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Skills API response:", data); // Debugging log
+
+          if (data.entities) {
+            allSkills = allSkills.concat(data.entities); // Add the current page's skills to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableSkills = allSkills;
+        populateSkillDropdown();
+      } catch (error) {
+        console.error("Error fetching skills:", error);
+      }
+    }
+
+    function populateSkillDropdown() {
+      const dropdown = document.getElementById('skillDropdown');
+      dropdown.innerHTML = '<option value="">Select Skill</option>';
+
+      availableSkills.forEach(skill => {
+        let option = document.createElement("option");
+        option.value = skill.id;
+        option.textContent = skill.name;
+        dropdown.appendChild(option);
+      });
+    }
 
     async function processQueueAction(token) {
       const action = document.getElementById('actionDropdown').value;

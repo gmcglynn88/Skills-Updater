@@ -369,6 +369,11 @@
       });
     }
 
+    document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll('#agentDropdownQueue input[type="checkbox"]');
+      checkboxes.forEach(checkbox => checkbox.checked = true);
+    });
+
     async function fetchAgentsForQueue(token) {
       const selectedAgentIds = Array.from(document.querySelectorAll('#agentDropdownQueue input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
       const queueId = document.getElementById('queueDropdown').value;

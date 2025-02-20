@@ -28,9 +28,32 @@
       font-size: 24px;
     }
 
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .logo {
       height: 50px;
       background-color: transparent;
+    }
+
+    .refresh-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .refresh-button:hover {
+      transform: rotate(360deg); /* Adds a rotation effect when hovered */
+    }
+
+    .refresh-button:focus {
+      outline: none; /* Removes outline when clicked */
     }
 
     .divider {
@@ -212,7 +235,12 @@
 <body>
   <header>
     <h1>IPI Skills On The Fly</h1>
-    <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo">
+    <div class="logo-container">
+      <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo">
+      <button id="refreshButton" class="refresh-button" title="Refresh">
+        <span>&#x21bb;</span> <!-- Unicode refresh symbol -->
+      </button>
+    </div>
   </header>
   <div class="divider"></div>
 
@@ -369,11 +397,6 @@
       });
     }
 
-    document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => {
-      const checkboxes = document.querySelectorAll('#agentDropdownQueue input[type="checkbox"]');
-      checkboxes.forEach(checkbox => checkbox.checked = true);
-    });
-
     async function fetchAgentsForQueue(token) {
       const selectedAgentIds = Array.from(document.querySelectorAll('#agentDropdownQueue input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
       const queueId = document.getElementById('queueDropdown').value;
@@ -433,17 +456,37 @@
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
-        return data.entities.map(queue => queue.name).join(', ');
+        return data.entities.map(queue => queue.name).join(', ') || 'No Queue Assigned';
       } catch (error) {
-        console.error("Error fetching agent queues:", error);
-        return "";
+        console.error(`Error fetching queues for agent ${agentId}:`, error);
       }
     }
 
-    function setupEventListeners(token) {
-      document.getElementById('fetchAgents').addEventListener('click', () => fetchAgentsForQueue(token));
-      document.getElementById('processQueueAction').addEventListener('click', () => processQueueAction(token));
-    }
+    document.getElementById("fetchAgents").addEventListener('click', () => {
+      const token = window.location.hash.split('=')[1];
+      fetchAgentsForQueue(token);
+    });
+
+    document.getElementById("refreshButton").addEventListener('click', () => {
+      location.reload(); // Refresh the page
+    });
+
+    document.querySelectorAll('.tab-button').forEach(tabButton => {
+      tabButton.addEventListener('click', () => {
+        document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+        tabButton.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(tabContent => {
+          tabContent.classList.remove('active');
+        });
+
+        const activeTab = document.getElementById(tabButton.getAttribute('data-tab'));
+        if (activeTab) {
+          activeTab.classList.add('active');
+        }
+      });
+    });
+
   </script>
 </body>
 </html>

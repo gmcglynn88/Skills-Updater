@@ -37,23 +37,7 @@
     .logo {
       height: 50px;
       background-color: transparent;
-    }
-
-    .refresh-button {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-
-    .refresh-button:hover {
-      transform: rotate(360deg); /* Adds a rotation effect when hovered */
-    }
-
-    .refresh-button:focus {
-      outline: none; /* Removes outline when clicked */
+      cursor: pointer; /* Add pointer cursor to indicate it's clickable */
     }
 
     .divider {
@@ -236,10 +220,7 @@
   <header>
     <h1>IPI Skills On The Fly</h1>
     <div class="logo-container">
-      <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo">
-      <button id="refreshButton" class="refresh-button" title="Refresh">
-        <span>&#x21bb;</span> <!-- Unicode refresh symbol -->
-      </button>
+      <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo" id="logo">
     </div>
   </header>
   <div class="divider"></div>
@@ -467,7 +448,7 @@
       fetchAgentsForQueue(token);
     });
 
-    document.getElementById("refreshButton").addEventListener('click', () => {
+    document.getElementById("logo").addEventListener('click', () => {
       location.reload(); // Refresh the page
     });
 

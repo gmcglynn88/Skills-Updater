@@ -247,6 +247,8 @@
         agents = agentsData;
         populateDropdown('agent-select-queue', agents, 'name');
         populateDropdown('agent-select-skill', agents, 'name');
+        fetchQueues();
+        fetchSkills();
       } catch (error) {
         console.error('Error fetching agents:', error);
       }

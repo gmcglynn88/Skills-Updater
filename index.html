@@ -245,110 +245,93 @@
           grant_type: 'authorization_code',
         }),
       });
+
       const data = await response.json();
       accessToken = data.access_token;
+      // Save the token in localStorage for persistent usage
+      localStorage.setItem('access_token', accessToken);
+
       // Now that we have the access token, remove the code from URL and reload
       window.history.replaceState(null, null, window.location.pathname);
       populateQueueTable();
       populateSkillTable();
     }
 
-    // Select Tab Functions
-    function showTab(tab) {
-      const tabs = document.querySelectorAll('.tab-content');
-      tabs.forEach(t => t.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
-    }
-
-    // Select All Checkboxes
-    function selectAll(type) {
-      const table = document.getElementById(`${type}Table`);
-      const checkboxes = table.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(cb => cb.checked = document.getElementById(`select-all-${type}`).checked);
+    // Function to add Authorization header to API requests
+    function getAuthHeader() {
+      return {
+        Authorization: `Bearer ${accessToken || localStorage.getItem('access_token')}`,
+      };
     }
 
     // Fetch Data Function (For Agents, Queues, Skills)
     async function fetchData(url) {
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      return await response.json();
+      try {
+        const response = await fetch(url, {
+          headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        alert('Error fetching data from API.');
+      }
     }
 
     // Populate Queue Table
     async function populateQueueTable() {
-      const agents = await fetchData('https://api.mypurecloud.ie/api/v2/users');
-      const queues = await fetchData('https://api.mypurecloud.ie/api/v2/routing/queues');
-      const tableBody = document.getElementById('queueTable').getElementsByTagName('tbody')[0];
+      try {
+        const agents = await fetchData('https://api.mypurecloud.ie/api/v2/users');
+        const queues = await fetchData('https://api.mypurecloud.ie/api/v2/routing/queues');
+        const tableBody = document.getElementById('queueTable').getElementsByTagName('tbody')[0];
 
-      agents.forEach(agent => {
-        const row = tableBody.insertRow();
-        row.innerHTML = `
-          <td><input type="checkbox" class="agent-checkbox"></td>
-          <td>${agent.name}</td>
-          <td><select class="queue-list">${queues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}</select></td>
-          <td><select class="action-list">
-            <option value="add">Add</option>
-            <option value="remove">Remove</option>
-          </select></td>
-        `;
-      });
-    }
-
-    // Process Queue Changes
-    async function processQueueChanges() {
-      const selectedAgents = document.querySelectorAll('#queueTable input[type="checkbox"]:checked');
-      selectedAgents.forEach(agent => {
-        const queueId = agent.closest('tr').querySelector('.queue-list').value;
-        const action = agent.closest('tr').querySelector('.action-list').value;
-        if (action === 'add') {
-          // Add Queue - Call API to add queue
-        } else if (action === 'remove') {
-          // Remove Queue - Call API to remove queue
-        }
-      });
+        agents.forEach(agent => {
+          const row = tableBody.insertRow();
+          row.innerHTML = `
+            <td><input type="checkbox" class="agent-checkbox"></td>
+            <td>${agent.name}</td>
+            <td><select class="queue-list">${queues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}</select></td>
+            <td><select class="action-list">
+              <option value="add">Add</option>
+              <option value="remove">Remove</option>
+            </select></td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error populating queue table:', error);
+      }
     }
 
     // Populate Skill Table
     async function populateSkillTable() {
-      const agents = await fetchData('https://api.mypurecloud.ie/api/v2/users');
-      const skills = await fetchData('https://api.mypurecloud.ie/api/v2/routing/skills');
-      const tableBody = document.getElementById('skillTable').getElementsByTagName('tbody')[0];
+      try {
+        const agents = await fetchData('https://api.mypurecloud.ie/api/v2/users');
+        const skills = await fetchData('https://api.mypurecloud.ie/api/v2/routing/skills');
+        const tableBody = document.getElementById('skillTable').getElementsByTagName('tbody')[0];
 
-      agents.forEach(agent => {
-        const row = tableBody.insertRow();
-        row.innerHTML = `
-          <td><input type="checkbox" class="agent-checkbox"></td>
-          <td>${agent.name}</td>
-          <td><select class="skill-list">${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}</select></td>
-          <td><select class="action-list">
-            <option value="add">Add</option>
-            <option value="remove">Remove</option>
-            <option value="update">Update</option>
-          </select></td>
-        `;
-      });
+        agents.forEach(agent => {
+          const row = tableBody.insertRow();
+          row.innerHTML = `
+            <td><input type="checkbox" class="agent-checkbox"></td>
+            <td>${agent.name}</td>
+            <td><select class="skill-list">${skills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('')}</select></td>
+            <td><select class="action-list">
+              <option value="add">Add</option>
+              <option value="remove">Remove</option>
+              <option value="update">Update</option>
+            </select></td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error populating skill table:', error);
+      }
     }
 
-    // Process Skill Changes
-    async function processSkillChanges() {
-      const selectedAgents = document.querySelectorAll('#skillTable input[type="checkbox"]:checked');
-      selectedAgents.forEach(agent => {
-        const skillId = agent.closest('tr').querySelector('.skill-list').value;
-        const action = agent.closest('tr').querySelector('.action-list').value;
-        if (action === 'add') {
-          // Add Skill - Call API to add skill
-        } else if (action === 'remove') {
-          // Remove Skill - Call API to remove skill
-        } else if (action === 'update') {
-          // Update Skill Proficiency - Call API to update skill
-        }
-      });
-    }
-
-    // Initialize Tables on Page Load
+    // Initialize on Page Load
     document.addEventListener('DOMContentLoaded', () => {
       getAccessToken();
     });

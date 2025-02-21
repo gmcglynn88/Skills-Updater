@@ -228,7 +228,7 @@
     // Update queue table
     function updateQueueTable() {
       const queueTableBody = document.querySelector('#queue-table tbody');
-      queueTableBody.innerHTML = selectedQueueMembers.map(member => `
+      queueTableBody.innerHTML = selectedQueueMembers.map(member => ` 
         <tr>
           <td><input type="checkbox"></td>
           <td>${member.name}</td>

@@ -542,15 +542,14 @@
 
           if (skillId && proficiency) {
             try {
-              const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-                method: "POST",
+              const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills/${skillId}`, {
+                method: "PUT", // Use PUT instead of POST
                 headers: {
                   "Authorization": `Bearer ${token}`,
                   "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                  id: skillId,
-                  proficiency: parseFloat(proficiency)
+                  proficiency: parseFloat(proficiency) // Only send proficiency in the body
                 })
               });
 

@@ -396,10 +396,12 @@
         const data = await response.json();
         console.log("Agents by queue API response:", data); // Debugging log
 
-        // Extract user details from the response
+        // Extract user details and their current queue
         const agents = data.entities.map(member => ({
           id: member.user.id,
-          name: member.user.name
+          name: member.user.name,
+          queueId: queueId, // Store the queue ID for later use
+          queueName: data.name // Store the queue name for display
         }));
         return agents;
       } catch (error) {
@@ -419,7 +421,7 @@
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
-          <td>${type === 'skill' ? currentSkills : "N/A"}</td>
+          <td>${type === 'skill' ? currentSkills : agent.queueName || "N/A"}</td>
           <td>
             ${type === 'skill' ? `
               <select data-user-id="${agent.id}">

@@ -28,9 +28,16 @@
       font-size: 24px;
     }
 
-    .logo {
-      height: 50px;
-      background-color: transparent;
+    .refresh-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .refresh-button:hover {
+      text-decoration: underline;
     }
 
     .divider {
@@ -135,7 +142,7 @@
       border-radius: 5px;
     }
 
-    .select-all-button {
+    .select-all-checkbox {
       margin-bottom: 10px;
     }
   </style>
@@ -143,7 +150,7 @@
 <body>
   <header>
     <h1>IPI Skills On The Fly</h1>
-    <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo" class="logo">
+    <button class="refresh-button" id="refreshButton">Refresh</button>
   </header>
   <div class="divider"></div>
 
@@ -156,16 +163,19 @@
 
     <!-- Skill Assignment Tab -->
     <div id="skill-tab" class="tab-content active">
-      <label for="skillDropdown">Select Skill:</label>
-      <select id="skillDropdown"></select>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <label for="skillDropdown">Select Skill:</label>
+        <select id="skillDropdown"></select>
+        <label for="agentDropdownForSkill">Or Select Agent:</label>
+        <select id="agentDropdownForSkill"></select>
+      </div>
 
       <button id="fetchAgentsForSkill">Get Agents</button>
-      <button class="select-all-button" id="selectAllAgentsForSkill">Select All</button>
 
       <table id="agentsTableForSkill">
         <thead>
           <tr>
-            <th>Select</th>
+            <th><input type="checkbox" id="selectAllAgentsForSkill" class="select-all-checkbox"></th>
             <th>Agent</th>
             <th>Current Skill</th>
             <th>Skill Change</th>
@@ -180,16 +190,19 @@
 
     <!-- Queue Assignment Tab -->
     <div id="queue-tab" class="tab-content">
-      <label for="queueDropdown">Select Queue:</label>
-      <select id="queueDropdown"></select>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <label for="queueDropdown">Select Queue:</label>
+        <select id="queueDropdown"></select>
+        <label for="agentDropdownForQueue">Or Select Agent:</label>
+        <select id="agentDropdownForQueue"></select>
+      </div>
 
       <button id="fetchAgentsForQueue">Get Agents</button>
-      <button class="select-all-button" id="selectAllAgentsForQueue">Select All</button>
 
       <table id="agentsTableForQueue">
         <thead>
           <tr>
-            <th>Select</th>
+            <th><input type="checkbox" id="selectAllAgentsForQueue" class="select-all-checkbox"></th>
             <th>Agent</th>
             <th>Current Queue</th>
             <th>Queue Change</th>
@@ -211,6 +224,7 @@
 
     let availableSkills = [];
     let availableQueues = [];
+    let availableAgents = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
@@ -229,7 +243,9 @@
       console.log("Initializing app...");
       await fetchQueues(token);
       await fetchAllSkills(token); // Fetch all skills with pagination
+      await fetchAllAgents(token); // Fetch all agents
       populateSkillDropdown();
+      populateAgentDropdowns();
       setupTabs();
       setupEventListeners(token);
     }
@@ -259,6 +275,7 @@
       document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => selectAllAgents('queue'));
       document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
       document.getElementById('updateQueues').addEventListener('click', () => updateSelectedQueues(token));
+      document.getElementById('refreshButton').addEventListener('click', () => window.location.reload());
     }
 
     async function fetchQueues(token) {
@@ -323,6 +340,33 @@
       }
     }
 
+    async function fetchAllAgents(token) {
+      try {
+        let allAgents = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/users?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Agents API response:", data); // Debugging log
+
+          if (data.entities) {
+            allAgents = allAgents.concat(data.entities); // Add the current page's agents to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableAgents = allAgents;
+        populateAgentDropdowns();
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
+    }
+
     function populateSkillDropdown() {
       const dropdown = document.getElementById('skillDropdown');
       dropdown.innerHTML = '<option value="">Select Skill</option>';
@@ -332,6 +376,21 @@
         option.value = skill.id;
         option.textContent = skill.name;
         dropdown.appendChild(option);
+      });
+    }
+
+    function populateAgentDropdowns() {
+      const skillDropdown = document.getElementById('agentDropdownForSkill');
+      const queueDropdown = document.getElementById('agentDropdownForQueue');
+      skillDropdown.innerHTML = '<option value="">Select Agent</option>';
+      queueDropdown.innerHTML = '<option value="">Select Agent</option>';
+
+      availableAgents.forEach(agent => {
+        let option = document.createElement("option");
+        option.value = agent.id;
+        option.textContent = agent.name;
+        skillDropdown.appendChild(option.cloneNode(true));
+        queueDropdown.appendChild(option.cloneNode(true));
       });
     }
 
@@ -350,26 +409,42 @@
 
     async function fetchAgentsForSkill(token) {
       const skillId = document.getElementById('skillDropdown').value;
+      const agentId = document.getElementById('agentDropdownForSkill').value;
 
-      if (!skillId) {
-        alert('Please select a skill first.');
+      if (!skillId && !agentId) {
+        alert('Please select a skill or an agent first.');
         return;
       }
 
-      const agents = await fetchAgentsBySkill(skillId, token);
+      let agents = [];
+      if (skillId) {
+        agents = await fetchAgentsBySkill(skillId, token);
+      } else if (agentId) {
+        const agent = availableAgents.find(a => a.id === agentId);
+        if (agent) agents = [agent];
+      }
+
       console.log("Agents for skill:", agents); // Debugging log
       populateTable(agents, 'skill', token);
     }
 
     async function fetchAgentsForQueue(token) {
       const queueId = document.getElementById('queueDropdown').value;
+      const agentId = document.getElementById('agentDropdownForQueue').value;
 
-      if (!queueId) {
-        alert('Please select a queue first.');
+      if (!queueId && !agentId) {
+        alert('Please select a queue or an agent first.');
         return;
       }
 
-      const agents = await fetchAgentsByQueue(queueId, token);
+      let agents = [];
+      if (queueId) {
+        agents = await fetchAgentsByQueue(queueId, token);
+      } else if (agentId) {
+        const agent = availableAgents.find(a => a.id === agentId);
+        if (agent) agents = [agent];
+      }
+
       console.log("Agents for queue:", agents); // Debugging log
       populateTable(agents, 'queue', token);
     }
@@ -441,11 +516,13 @@
         `;
         tableBody.appendChild(row);
       }
-    }
 
-    function selectAllAgents(type) {
-      const checkboxes = document.querySelectorAll(`#agentsTableFor${type.charAt(0).toUpperCase() + type.slice(1)} tbody input[type='checkbox']`);
-      checkboxes.forEach(checkbox => checkbox.checked = true);
+      // Add "Select All" checkbox functionality
+      const selectAllCheckbox = document.querySelector(`#selectAllAgentsFor${type.charAt(0).toUpperCase() + type.slice(1)}`);
+      selectAllCheckbox.addEventListener('change', (e) => {
+        const checkboxes = tableBody.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
+      });
     }
 
     async function updateSelectedSkills(token) {

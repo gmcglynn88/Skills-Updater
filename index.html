@@ -161,8 +161,6 @@
     <div class="tabs">
       <button class="tab-button active" data-tab="skill-tab">Skill Assignment</button>
       <button class="tab-button" data-tab="queue-tab">Queue Assignment</button>
-      <button class="tab-button" data-tab="queue-change-tab">Queue Change</button>
-      <button class="tab-button" data-tab="skill-change-tab">Skill Change</button>
     </div>
 
     <!-- Skill Assignment Tab -->
@@ -218,113 +216,46 @@
 
       <button id="updateQueues">Update Selected Queues</button>
     </div>
-
-    <!-- Queue Change Tab -->
-    <div id="queue-change-tab" class="tab-content">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <label for="queueChangeDropdown">Select Queue:</label>
-        <select id="queueChangeDropdown"></select>
-        <label for="agentDropdownForQueueChange">Or Select Agent:</label>
-        <select id="agentDropdownForQueueChange"></select>
-      </div>
-
-      <button id="fetchAgentsForQueueChange">Get Agents</button>
-
-      <table id="agentsTableForQueueChange">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAllAgentsForQueueChange" class="select-all-checkbox"></th>
-            <th>Agent</th>
-            <th>Current Queue</th>
-            <th>Queue Change</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <button id="updateQueueChanges">Process Queue Changes</button>
-    </div>
-
-    <!-- Skill Change Tab -->
-    <div id="skill-change-tab" class="tab-content">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <label for="skillChangeDropdown">Select Skill:</label>
-        <select id="skillChangeDropdown"></select>
-        <label for="agentDropdownForSkillChange">Or Select Agent:</label>
-        <select id="agentDropdownForSkillChange"></select>
-      </div>
-
-      <button id="fetchAgentsForSkillChange">Get Agents</button>
-
-      <table id="agentsTableForSkillChange">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAllAgentsForSkillChange" class="select-all-checkbox"></th>
-            <th>Agent</th>
-            <th>Current Skill</th>
-            <th>Skill Change</th>
-            <th>Proficiency</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <button id="updateSkillChanges">Process Skill Changes</button>
-    </div>
   </div>
 
   <script>
-    // JavaScript for tab switching
+    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
+    const responseType = 'token';
+    const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    let availableSkills = [];
+    let availableQueues = [];
+    let availableAgents = [];
+
     document.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const token = params.get('access_token');
+
+      if (!token) {
+        window.location.href = oauthUrl;
+      } else {
+        console.log("Token retrieved:", token); // Debugging log
+        initializeApp(token);
+      }
+    });
+
+    async function initializeApp(token) {
+      console.log("Initializing app...");
+      await fetchQueues(token);
+      await fetchAllSkills(token); // Fetch all skills with pagination
+      await fetchAllAgents(token); // Fetch all agents
+      populateSkillDropdown();
+      populateAgentDropdowns();
+      setupTabs();
+      setupEventListeners(token);
+    }
+
+    function setupTabs() {
       const tabButtons = document.querySelectorAll('.tab-button');
       const tabContents = document.querySelectorAll('.tab-content');
-      
-      // API functions for populating dropdowns
-      async function fetchSkills() {
-        const response = await fetch('https://api.mypurecloud.ie/api/v2/routing/skills');
-        const data = await response.json();
-        const dropdown = document.getElementById('skillDropdown');
-        dropdown.innerHTML = '<option value="">Select Skill</option>';
-        data.entities.forEach(skill => {
-          const option = document.createElement('option');
-          option.value = skill.id;
-          option.textContent = skill.name;
-          dropdown.appendChild(option);
-        });
-      }
 
-      async function fetchQueues() {
-        const response = await fetch('https://api.mypurecloud.ie/api/v2/routing/queues');
-        const data = await response.json();
-        const dropdown = document.getElementById('queueDropdown');
-        dropdown.innerHTML = '<option value="">Select Queue</option>';
-        data.entities.forEach(queue => {
-          const option = document.createElement('option');
-          option.value = queue.id;
-          option.textContent = queue.name;
-          dropdown.appendChild(option);
-        });
-      }
-
-      async function fetchAgents() {
-        const response = await fetch('https://api.mypurecloud.ie/api/v2/users');
-        const data = await response.json();
-        const skillDropdown = document.getElementById('agentDropdownForSkill');
-        const queueDropdown = document.getElementById('agentDropdownForQueue');
-        skillDropdown.innerHTML = '<option value="">Select Agent</option>';
-        queueDropdown.innerHTML = '<option value="">Select Agent</option>';
-        data.entities.forEach(agent => {
-          const option = document.createElement('option');
-          option.value = agent.id;
-          option.textContent = agent.name;
-          skillDropdown.appendChild(option.cloneNode(true));
-          queueDropdown.appendChild(option.cloneNode(true));
-        });
-      }
-
-      // Add tab switching and API calls
       tabButtons.forEach(button => {
         button.addEventListener('click', () => {
           // Remove active class from all buttons and contents
@@ -336,23 +267,154 @@
           button.classList.add('active');
           document.getElementById(tabId).classList.add('active');
 
-          // Call the APIs when relevant tabs are clicked
+          // Call API when relevant tabs are clicked
           if (tabId === 'skill-tab') {
-            fetchSkills();
-            fetchAgents();
+            fetchAllSkills(token);
+            populateSkillDropdown();
           } else if (tabId === 'queue-tab') {
-            fetchQueues();
-            fetchAgents();
-          } else if (tabId === 'queue-change-tab') {
-            fetchQueues();
-            fetchAgents();
-          } else if (tabId === 'skill-change-tab') {
-            fetchSkills();
-            fetchAgents();
+            fetchQueues(token);
+            populateQueueDropdown();
           }
         });
       });
-    });
+    }
+
+    function setupEventListeners(token) {
+      document.getElementById('fetchAgentsForSkill').addEventListener('click', () => fetchAgentsForSkill(token));
+      document.getElementById('fetchAgentsForQueue').addEventListener('click', () => fetchAgentsForQueue(token));
+      document.getElementById('selectAllAgentsForSkill').addEventListener('click', () => selectAllAgents('skill'));
+      document.getElementById('selectAllAgentsForQueue').addEventListener('click', () => selectAllAgents('queue'));
+      document.getElementById('updateSkills').addEventListener('click', () => updateSelectedSkills(token));
+      document.getElementById('updateQueues').addEventListener('click', () => updateSelectedQueues(token));
+    }
+
+    async function fetchQueues(token) {
+      try {
+        let allQueues = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/queues?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Queues API response:", data); // Debugging log
+
+          if (data.entities) {
+            allQueues = allQueues.concat(data.entities); // Add the current page's queues to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableQueues = allQueues;
+        const dropdown = document.getElementById('queueDropdown');
+        dropdown.innerHTML = '<option value="">Select Queue</option>';
+
+        allQueues.forEach(queue => {
+          let option = document.createElement("option");
+          option.value = queue.id;
+          option.textContent = queue.name;
+          dropdown.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching queues:", error);
+      }
+    }
+
+    async function fetchAllSkills(token) {
+      try {
+        let allSkills = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/skills?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Skills API response:", data); // Debugging log
+
+          if (data.entities) {
+            allSkills = allSkills.concat(data.entities); // Add the current page's skills to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableSkills = allSkills;
+        populateSkillDropdown();
+      } catch (error) {
+        console.error("Error fetching skills:", error);
+      }
+    }
+
+    async function fetchAllAgents(token) {
+      try {
+        let allAgents = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/users?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Agents API response:", data); // Debugging log
+
+          if (data.entities) {
+            allAgents = allAgents.concat(data.entities); // Add the current page's agents to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableAgents = allAgents;
+        populateAgentDropdowns();
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
+    }
+
+    function populateSkillDropdown() {
+      const dropdown = document.getElementById('skillDropdown');
+      dropdown.innerHTML = '<option value="">Select Skill</option>';
+
+      availableSkills.forEach(skill => {
+        let option = document.createElement("option");
+        option.value = skill.id;
+        option.textContent = skill.name;
+        dropdown.appendChild(option);
+      });
+    }
+
+    function populateQueueDropdown() {
+      const dropdown = document.getElementById('queueDropdown');
+      dropdown.innerHTML = '<option value="">Select Queue</option>';
+
+      availableQueues.forEach(queue => {
+        let option = document.createElement("option");
+        option.value = queue.id;
+        option.textContent = queue.name;
+        dropdown.appendChild(option);
+      });
+    }
+
+    function populateAgentDropdowns() {
+      const skillDropdown = document.getElementById('agentDropdownForSkill');
+      const queueDropdown = document.getElementById('agentDropdownForQueue');
+      skillDropdown.innerHTML = '<option value="">Select Agent</option>';
+      queueDropdown.innerHTML = '<option value="">Select Agent</option>';
+
+      availableAgents.forEach(agent => {
+        let option = document.createElement("option");
+        option.value = agent.id;
+        option.textContent = agent.name;
+        skillDropdown.appendChild(option.cloneNode(true));
+        queueDropdown.appendChild(option.cloneNode(true));
+      });
+    }
   </script>
 </body>
 </html>

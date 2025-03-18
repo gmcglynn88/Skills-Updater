@@ -477,10 +477,13 @@
 
       agents.forEach(agent => {
         let row = document.createElement("tr");
+
+        // Fetch current skills for the agent
+        const currentSkills = agent.routingSkills ? agent.routingSkills.map(skill => skill.name).join(', ') : 'No skills';
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name}</td>
-          <td>${type === 'skill' ? 'Current Skill' : agent.queueName}</td>
+          <td>${currentSkills}</td>
           <td>
             <select data-user-id="${agent.id}">
               <option value="">Select</option>

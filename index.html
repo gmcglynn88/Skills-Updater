@@ -270,26 +270,93 @@
       });
     }
 
-    function populateSkillSearch() {
-      const dropdown = document.getElementById('skillSearch');
-      dropdown.innerHTML = '<option value="">Select Skill</option>';
-      availableSkills.forEach(skill => {
-        let option = document.createElement("option");
-        option.value = skill.id;
-        option.textContent = skill.name;
-        dropdown.appendChild(option);
-      });
+    async function fetchQueues(token) {
+      try {
+        let allQueues = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/queues?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Queues API response:", data); // Debugging log
+
+          if (data.entities) {
+            allQueues = allQueues.concat(data.entities); // Add the current page's queues to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableQueues = allQueues;
+        const dropdown = document.getElementById('queueSearch');
+        dropdown.innerHTML = '<option value="">Select Queue</option>';
+
+        allQueues.forEach(queue => {
+          let option = document.createElement("option");
+          option.value = queue.id;
+          option.textContent = queue.name;
+          dropdown.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error fetching queues:", error);
+      }
     }
 
-    function populateQueueSearch() {
-      const dropdown = document.getElementById('queueSearch');
-      dropdown.innerHTML = '<option value="">Select Queue</option>';
-      availableQueues.forEach(queue => {
-        let option = document.createElement("option");
-        option.value = queue.id;
-        option.textContent = queue.name;
-        dropdown.appendChild(option);
-      });
+    async function fetchAllSkills(token) {
+      try {
+        let allSkills = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/routing/skills?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Skills API response:", data); // Debugging log
+
+          if (data.entities) {
+            allSkills = allSkills.concat(data.entities); // Add the current page's skills to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableSkills = allSkills;
+        populateSkillSearch();
+      } catch (error) {
+        console.error("Error fetching skills:", error);
+      }
+    }
+
+    async function fetchAllAgents(token) {
+      try {
+        let allAgents = [];
+        let nextUri = "https://api.mypurecloud.ie/api/v2/users?pageSize=100"; // Start with the first page
+
+        while (nextUri) {
+          const response = await fetch(nextUri, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const data = await response.json();
+          console.log("Agents API response:", data); // Debugging log
+
+          if (data.entities) {
+            allAgents = allAgents.concat(data.entities); // Add the current page's agents to the list
+          }
+
+          // Check if there's a next page
+          nextUri = data.nextUri ? `https://api.mypurecloud.ie${data.nextUri}` : null;
+        }
+
+        availableAgents = allAgents;
+        populateAgentSearchDropdowns();
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
     }
 
     function populateAgentSearchDropdowns() {
@@ -307,9 +374,18 @@
       });
     }
 
-    // Fetching functions and other methods for updating skill/queue will go here...
-    // Similar to the code above, adjust the methods to handle the skill/queue changes.
-
+    async function fetchAgentSkills(userId, token) {
+      try {
+        const response = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities ? data.entities.map(skill => skill.name).join(", ") : "No Skills";
+      } catch (error) {
+        console.error(`Error fetching skills for ${userId}:`, error);
+        return "Error";
+      }
+    }
   </script>
 </body>
 </html>

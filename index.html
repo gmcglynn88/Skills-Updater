@@ -308,7 +308,7 @@
     async function initializeApp(token) {
       console.log("Initializing app...");
       await fetchQueues(token);
-      await fetchAllSkills(token); // Fetch all skills with pagination
+      await fetchAllSkills(token); // Fetch all skills
       await fetchAllAgents(token); // Fetch all agents
       await fetchManagementUnits(token); // Fetch management units
       populateSkillDropdown();
@@ -319,6 +319,48 @@
       setupEventListeners(token);
     }
 
+    async function fetchQueues(token) {
+      const url = 'https://api.mypurecloud.ie/api/v2/routing/queues';
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        console.log("Queues API Response:", data); // Debugging log
+        availableQueues = data.entities || [];
+      } catch (error) {
+        console.error("Error fetching queues:", error);
+      }
+    }
+
+    async function fetchAllSkills(token) {
+      const url = 'https://api.mypurecloud.ie/api/v2/routing/skills';
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        console.log("Skills API Response:", data); // Debugging log
+        availableSkills = data.entities || [];
+      } catch (error) {
+        console.error("Error fetching skills:", error);
+      }
+    }
+
+    async function fetchAllAgents(token) {
+      const url = 'https://api.mypurecloud.ie/api/v2/users';
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        console.log("Agents API Response:", data); // Debugging log
+        availableAgents = data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+      }
+    }
+
     async function fetchManagementUnits(token) {
       const url = 'https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits';
       try {
@@ -326,15 +368,65 @@
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
-        availableManagementUnits = data.entities;
-        populateManagementUnitDropdowns();
+        console.log("Management Units API Response:", data); // Debugging log
+        availableManagementUnits = data.entities || [];
       } catch (error) {
         console.error("Error fetching management units:", error);
       }
     }
 
+    function populateSkillDropdown() {
+      const skillDropdown = document.getElementById('skillDropdown');
+      const bulkSkillDropdown = document.getElementById('bulkSkillDropdown');
+      
+      skillDropdown.innerHTML = '<option value="">Select Skill</option>';
+      bulkSkillDropdown.innerHTML = '<option value="">Select Skill</option>';
+      
+      availableSkills.forEach(skill => {
+        const option = document.createElement('option');
+        option.value = skill.id;
+        option.textContent = skill.name;
+        skillDropdown.appendChild(option);
+        bulkSkillDropdown.appendChild(option.cloneNode(true));
+      });
+    }
+
+    function populateQueueDropdown() {
+      const queueDropdown = document.getElementById('queueDropdown');
+      const bulkQueueDropdown = document.getElementById('bulkQueueDropdown');
+      
+      queueDropdown.innerHTML = '<option value="">Select Queue</option>';
+      bulkQueueDropdown.innerHTML = '<option value="">Select Queue</option>';
+      
+      availableQueues.forEach(queue => {
+        const option = document.createElement('option');
+        option.value = queue.id;
+        option.textContent = queue.name;
+        queueDropdown.appendChild(option);
+        bulkQueueDropdown.appendChild(option.cloneNode(true));
+      });
+    }
+
+    function populateAgentDropdowns() {
+      const agentDropdownForSkill = document.getElementById('agentDropdownForSkill');
+      const agentDropdownForQueue = document.getElementById('agentDropdownForQueue');
+      const bulkAgentDropdownForSkill = document.getElementById('bulkAgentDropdownForSkill');
+      const bulkAgentDropdownForQueue = document.getElementById('bulkAgentDropdownForQueue');
+      
+      const allDropdowns = [agentDropdownForSkill, agentDropdownForQueue, bulkAgentDropdownForSkill, bulkAgentDropdownForQueue];
+      
+      allDropdowns.forEach(dropdown => {
+        dropdown.innerHTML = '<option value="">Select Agent</option>';
+        availableAgents.forEach(agent => {
+          const option = document.createElement('option');
+          option.value = agent.id;
+          option.textContent = agent.name;
+          dropdown.appendChild(option);
+        });
+      });
+    }
+
     function populateManagementUnitDropdowns() {
-      console.log("Populating Management Unit Dropdowns...");
       const skillDropdown = document.getElementById('managementUnitDropdownForSkill');
       const queueDropdown = document.getElementById('managementUnitDropdownForQueue');
       const bulkSkillDropdown = document.getElementById('bulkManagementUnitDropdownForSkill');

@@ -455,34 +455,49 @@
 
     async function fetchAgentsBySkill(skillId, token) {
       const url = `https://api.mypurecloud.ie/api/v2/users?routingSkills=${skillId}`;
-      const response = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      const data = await response.json();
-      return data.entities || [];
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agents by skill:", error);
+        return [];
+      }
     }
 
     async function fetchAgentsByQueue(queueId, token) {
       const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`;
-      const response = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      const data = await response.json();
-      return data.entities.map(member => ({
-        id: member.user.id,
-        name: member.user.name,
-        queueId: queueId, // Store the queue ID for later use
-        queueName: data.name // Store the queue name for display
-      }));
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities.map(member => ({
+          id: member.user.id,
+          name: member.user.name,
+          queueId: queueId, // Store the queue ID for later use
+          queueName: data.name // Store the queue name for display
+        }));
+      } catch (error) {
+        console.error("Error fetching agents by queue:", error);
+        return [];
+      }
     }
 
     async function fetchAgentsByManagementUnit(unitId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/agents/${unitId}/managementunit`;
-      const response = await fetch(url, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      const data = await response.json();
-      return data.entities || [];
+      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits/${unitId}/users`;
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agents by management unit:", error);
+        return [];
+      }
     }
 
     function populateTable(agents, type) {

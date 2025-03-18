@@ -471,16 +471,21 @@
 
     async function fetchAgentsForSkill(token) {
       const skillId = document.getElementById('skillDropdown').value;
+      const agentId = document.getElementById('agentDropdownForSkill').value;
       const managementUnitId = document.getElementById('managementUnitDropdownForSkill').value;
 
-      if (!skillId && !managementUnitId) {
-        alert('Please select a skill or management unit first.');
+      if (!skillId && !agentId && !managementUnitId) {
+        alert('Please select a skill, agent, or management unit first.');
         return;
       }
 
       let agents = [];
       if (skillId) {
         agents = await fetchAgentsBySkill(skillId, token);
+      } else if (agentId) {
+        // If an agent is selected, return only that agent
+        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
+        agents = selectedAgent ? [selectedAgent] : [];
       } else if (managementUnitId) {
         agents = await fetchAgentsByManagementUnit(managementUnitId, token);
       }
@@ -490,16 +495,21 @@
 
     async function fetchAgentsForQueue(token) {
       const queueId = document.getElementById('queueDropdown').value;
+      const agentId = document.getElementById('agentDropdownForQueue').value;
       const managementUnitId = document.getElementById('managementUnitDropdownForQueue').value;
 
-      if (!queueId && !managementUnitId) {
-        alert('Please select a queue or management unit first.');
+      if (!queueId && !agentId && !managementUnitId) {
+        alert('Please select a queue, agent, or management unit first.');
         return;
       }
 
       let agents = [];
       if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
+      } else if (agentId) {
+        // If an agent is selected, return only that agent
+        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
+        agents = selectedAgent ? [selectedAgent] : [];
       } else if (managementUnitId) {
         agents = await fetchAgentsByManagementUnit(managementUnitId, token);
       }
@@ -509,16 +519,21 @@
 
     async function fetchBulkAgentsForSkill(token) {
       const skillId = document.getElementById('bulkSkillDropdown').value;
+      const agentId = document.getElementById('bulkAgentDropdownForSkill').value;
       const managementUnitId = document.getElementById('bulkManagementUnitDropdownForSkill').value;
 
-      if (!skillId && !managementUnitId) {
-        alert('Please select a skill or management unit first.');
+      if (!skillId && !agentId && !managementUnitId) {
+        alert('Please select a skill, agent, or management unit first.');
         return;
       }
 
       let agents = [];
       if (skillId) {
         agents = await fetchAgentsBySkill(skillId, token);
+      } else if (agentId) {
+        // If an agent is selected, return only that agent
+        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
+        agents = selectedAgent ? [selectedAgent] : [];
       } else if (managementUnitId) {
         agents = await fetchAgentsByManagementUnit(managementUnitId, token);
       }
@@ -528,16 +543,21 @@
 
     async function fetchBulkAgentsForQueue(token) {
       const queueId = document.getElementById('bulkQueueDropdown').value;
+      const agentId = document.getElementById('bulkAgentDropdownForQueue').value;
       const managementUnitId = document.getElementById('bulkManagementUnitDropdownForQueue').value;
 
-      if (!queueId && !managementUnitId) {
-        alert('Please select a queue or management unit first.');
+      if (!queueId && !agentId && !managementUnitId) {
+        alert('Please select a queue, agent, or management unit first.');
         return;
       }
 
       let agents = [];
       if (queueId) {
         agents = await fetchAgentsByQueue(queueId, token);
+      } else if (agentId) {
+        // If an agent is selected, return only that agent
+        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
+        agents = selectedAgent ? [selectedAgent] : [];
       } else if (managementUnitId) {
         agents = await fetchAgentsByManagementUnit(managementUnitId, token);
       }
@@ -585,7 +605,10 @@
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
-        return data.entities || [];
+        return data.entities.map(agent => ({
+          id: agent.id,
+          name: agent.name // Ensure the name property is included
+        }));
       } catch (error) {
         console.error("Error fetching agents by management unit:", error);
         return [];
@@ -599,7 +622,7 @@
         let row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
-          <td>${agent.name}</td>
+          <td>${agent.name || 'N/A'}</td> <!-- Ensure name is displayed -->
           <td>${agent.queueName || 'No Skill Assigned'}</td>
           <td>
             <select data-user-id="${agent.id}">

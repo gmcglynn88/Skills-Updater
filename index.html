@@ -282,44 +282,228 @@
   </div>
 
   <script>
-    // Setup: Fetch Management Units
-    async function fetchManagementUnits(token, targetElementId) {
+    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
+    const responseType = 'token';
+    const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    let availableSkills = [];
+    let availableQueues = [];
+    let availableAgents = [];
+    let availableManagementUnits = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const token = params.get('access_token');
+
+      if (!token) {
+        window.location.href = oauthUrl;
+      } else {
+        console.log("Token retrieved:", token); // Debugging log
+        initializeApp(token);
+      }
+    });
+
+    async function initializeApp(token) {
+      console.log("Initializing app...");
+      await fetchQueues(token);
+      await fetchAllSkills(token); // Fetch all skills with pagination
+      await fetchAllAgents(token); // Fetch all agents
+      await fetchManagementUnits(token); // Fetch management units
+      populateSkillDropdown();
+      populateQueueDropdown();
+      populateAgentDropdowns();
+      populateManagementUnitDropdowns();
+      setupTabs();
+      setupEventListeners(token);
+    }
+
+    async function fetchManagementUnits(token) {
       const url = 'https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits';
       try {
         const response = await fetch(url, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await response.json();
-        const dropdown = document.getElementById(targetElementId);
-        dropdown.innerHTML = '<option value="">Select Management Unit</option>';
-        data.entities.forEach(unit => {
-          let option = document.createElement("option");
-          option.value = unit.id;
-          option.textContent = unit.name;
-          dropdown.appendChild(option);
-        });
+        availableManagementUnits = data.entities;
+        populateManagementUnitDropdowns();
       } catch (error) {
         console.error("Error fetching management units:", error);
       }
     }
 
-    // Setup: Fetch agents by Management Unit
-    async function fetchAgentsByManagementUnit(unitId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/agents/${unitId}/managementunit`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
+    function populateManagementUnitDropdowns() {
+      const skillDropdown = document.getElementById('managementUnitDropdownForSkill');
+      const queueDropdown = document.getElementById('managementUnitDropdownForQueue');
+      const bulkSkillDropdown = document.getElementById('bulkManagementUnitDropdownForSkill');
+      const bulkQueueDropdown = document.getElementById('bulkManagementUnitDropdownForQueue');
+      
+      const allDropdowns = [skillDropdown, queueDropdown, bulkSkillDropdown, bulkQueueDropdown];
+      allDropdowns.forEach(dropdown => {
+        dropdown.innerHTML = '<option value="">Select Management Unit</option>';
+        availableManagementUnits.forEach(unit => {
+          let option = document.createElement("option");
+          option.value = unit.id;
+          option.textContent = unit.name;
+          dropdown.appendChild(option);
         });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agents by management unit:", error);
-        return [];
-      }
+      });
     }
 
-    // Update tables and dropdowns dynamically as before...
-    // Make sure you properly call the fetchManagementUnits() and update the relevant tables when changing tabs
+    function setupTabs() {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          // Remove active class from all buttons and contents
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+
+          // Add active class to the clicked button and corresponding content
+          const tabId = button.getAttribute('data-tab');
+          button.classList.add('active');
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+    }
+
+    function setupEventListeners(token) {
+      document.getElementById('fetchAgentsForSkill').addEventListener('click', () => fetchAgentsForSkill(token));
+      document.getElementById('fetchAgentsForQueue').addEventListener('click', () => fetchAgentsForQueue(token));
+      document.getElementById('fetchBulkAgentsForSkill').addEventListener('click', () => fetchBulkAgentsForSkill(token));
+      document.getElementById('fetchBulkAgentsForQueue').addEventListener('click', () => fetchBulkAgentsForQueue(token));
+    }
+
+    async function fetchAgentsForSkill(token) {
+      const skillId = document.getElementById('skillDropdown').value;
+      const managementUnitId = document.getElementById('managementUnitDropdownForSkill').value;
+
+      if (!skillId && !managementUnitId) {
+        alert('Please select a skill or management unit first.');
+        return;
+      }
+
+      let agents = [];
+      if (skillId) {
+        agents = await fetchAgentsBySkill(skillId, token);
+      } else if (managementUnitId) {
+        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
+      }
+
+      populateTable(agents, 'skill');
+    }
+
+    async function fetchAgentsForQueue(token) {
+      const queueId = document.getElementById('queueDropdown').value;
+      const managementUnitId = document.getElementById('managementUnitDropdownForQueue').value;
+
+      if (!queueId && !managementUnitId) {
+        alert('Please select a queue or management unit first.');
+        return;
+      }
+
+      let agents = [];
+      if (queueId) {
+        agents = await fetchAgentsByQueue(queueId, token);
+      } else if (managementUnitId) {
+        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
+      }
+
+      populateTable(agents, 'queue');
+    }
+
+    async function fetchBulkAgentsForSkill(token) {
+      const skillId = document.getElementById('bulkSkillDropdown').value;
+      const managementUnitId = document.getElementById('bulkManagementUnitDropdownForSkill').value;
+
+      if (!skillId && !managementUnitId) {
+        alert('Please select a skill or management unit first.');
+        return;
+      }
+
+      let agents = [];
+      if (skillId) {
+        agents = await fetchAgentsBySkill(skillId, token);
+      } else if (managementUnitId) {
+        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
+      }
+
+      populateTable(agents, 'bulk-skill');
+    }
+
+    async function fetchBulkAgentsForQueue(token) {
+      const queueId = document.getElementById('bulkQueueDropdown').value;
+      const managementUnitId = document.getElementById('bulkManagementUnitDropdownForQueue').value;
+
+      if (!queueId && !managementUnitId) {
+        alert('Please select a queue or management unit first.');
+        return;
+      }
+
+      let agents = [];
+      if (queueId) {
+        agents = await fetchAgentsByQueue(queueId, token);
+      } else if (managementUnitId) {
+        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
+      }
+
+      populateTable(agents, 'bulk-queue');
+    }
+
+    async function fetchAgentsBySkill(skillId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/users?routingSkills=${skillId}`;
+      const response = await fetch(url, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.entities || [];
+    }
+
+    async function fetchAgentsByQueue(queueId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`;
+      const response = await fetch(url, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.entities.map(member => ({
+        id: member.user.id,
+        name: member.user.name,
+        queueId: queueId, // Store the queue ID for later use
+        queueName: data.name // Store the queue name for display
+      }));
+    }
+
+    async function fetchAgentsByManagementUnit(unitId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/agents/${unitId}/managementunit`;
+      const response = await fetch(url, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.entities || [];
+    }
+
+    function populateTable(agents, type) {
+      const tableBody = document.querySelector(`#${type === 'bulk-skill' ? 'bulkAgentsTableForSkill' : type === 'bulk-queue' ? 'bulkAgentsTableForQueue' : 'agentsTableFor' + type.charAt(0).toUpperCase() + type.slice(1)} tbody`);
+      tableBody.innerHTML = "";
+      agents.forEach(agent => {
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td><input type="checkbox" data-user-id="${agent.id}"></td>
+          <td>${agent.name}</td>
+          <td>${agent.queueName || 'No Skill Assigned'}</td>
+          <td>
+            <select data-user-id="${agent.id}">
+              <option value="">Select</option>
+              ${type === 'skill' || type === 'bulk-skill' ? availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('') : availableQueues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}
+            </select>
+          </td>
+          ${type === 'skill' || type === 'bulk-skill' ? `<td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td><td><input type="checkbox" class="delete-skill-checkbox" data-user-id="${agent.id}"></td>` : ''}
+        `;
+        tableBody.appendChild(row);
+      });
+    }
   </script>
 </body>
 </html>

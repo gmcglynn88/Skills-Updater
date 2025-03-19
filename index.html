@@ -316,6 +316,54 @@
       }
     }
 
+    async function fetchAgentsByManagementUnit(unitId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits/${unitId}/users`;
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        console.log("Agents by Management Unit API Response:", data); // Debugging log
+
+        // Ensure the agent name is correctly extracted
+        return data.entities.map(agent => ({
+          id: agent.id,
+          name: agent.name || 'N/A' // Fallback to 'N/A' if name is missing
+        }));
+      } catch (error) {
+        console.error("Error fetching agents by management unit:", error);
+        return [];
+      }
+    }
+
+    async function fetchAgentSkills(agentId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingskills`;
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agent skills:", error);
+        return [];
+      }
+    }
+
+    async function fetchAgentQueues(agentId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingqueues`;
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agent queues:", error);
+        return [];
+      }
+    }
+
     function populateSkillDropdown() {
       const skillDropdown = document.getElementById('skillDropdown');
       skillDropdown.innerHTML = '<option value="">Select Skill</option>';
@@ -417,9 +465,10 @@
       // Fetch skills for each agent
       const agentsWithSkills = await Promise.all(agents.map(async agent => {
         const skills = await fetchAgentSkills(agent.id, token);
-        return { ...agent, skills };
+        return { ...agent, skills }; // Ensure the agent object includes the name and skills
       }));
 
+      console.log("Agents with skills:", agentsWithSkills); // Debugging log
       populateTable(agentsWithSkills, 'skill');
     }
 
@@ -447,9 +496,10 @@
       // Fetch queues for each agent
       const agentsWithQueues = await Promise.all(agents.map(async agent => {
         const queues = await fetchAgentQueues(agent.id, token);
-        return { ...agent, queues };
+        return { ...agent, queues }; // Ensure the agent object includes the name and queues
       }));
 
+      console.log("Agents with queues:", agentsWithQueues); // Debugging log
       populateTable(agentsWithQueues, 'queue');
     }
 
@@ -486,60 +536,18 @@
       }
     }
 
-    async function fetchAgentsByManagementUnit(unitId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits/${unitId}/users`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities.map(agent => ({
-          id: agent.id,
-          name: agent.name // Ensure the name property is included
-        }));
-      } catch (error) {
-        console.error("Error fetching agents by management unit:", error);
-        return [];
-      }
-    }
-
-    async function fetchAgentSkills(agentId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingskills`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agent skills:", error);
-        return [];
-      }
-    }
-
-    async function fetchAgentQueues(agentId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingqueues`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agent queues:", error);
-        return [];
-      }
-    }
-
     function populateTable(agents, type) {
       const tableBody = document.querySelector(`#${type === 'skill' ? 'agentsTableForSkill' : 'agentsTableForQueue'} tbody`);
       tableBody.innerHTML = "";
+
       agents.forEach(agent => {
+        console.log("Agent data:", agent); // Debugging log to check agent structure
+
         let row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name || 'N/A'}</td> <!-- Ensure name is displayed -->
-          <td>${type === 'skill' ? agent.skills.map(skill => skill.name).join(', ') : agent.queues.map(queue => queue.name).join(', ')}</td>
+          <td>${type === 'skill' ? (agent.skills ? agent.skills.map(skill => skill.name).join(', ') : 'No Skills') : (agent.queues ? agent.queues.map(queue => queue.name).join(', ') : 'No Queues')}</td>
           <td>
             <select data-user-id="${agent.id}">
               <option value="">Select</option>

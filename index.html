@@ -161,8 +161,6 @@
     <div class="tabs">
       <button class="tab-button active" data-tab="skill-tab">Skill Assignment</button>
       <button class="tab-button" data-tab="queue-tab">Queue Assignment</button>
-      <button class="tab-button" data-tab="bulk-skill-tab">Bulk Skill Assignment</button>
-      <button class="tab-button" data-tab="bulk-queue-tab">Bulk Queue Assignment</button>
     </div>
 
     <!-- Skill Assignment Tab -->
@@ -183,7 +181,7 @@
           <tr>
             <th><input type="checkbox" id="selectAllAgentsForSkill" class="select-all-checkbox"></th>
             <th>Agent</th>
-            <th>Current Skill</th>
+            <th>Current Skills</th>
             <th>Skill Change</th>
             <th>Proficiency</th>
             <th>Delete Skill</th>
@@ -213,7 +211,7 @@
           <tr>
             <th><input type="checkbox" id="selectAllAgentsForQueue" class="select-all-checkbox"></th>
             <th>Agent</th>
-            <th>Current Queue</th>
+            <th>Current Queues</th>
             <th>Queue Change</th>
           </tr>
         </thead>
@@ -221,63 +219,6 @@
       </table>
 
       <button id="updateQueues">Update Selected Queues</button>
-    </div>
-
-    <!-- Bulk Skill Assignment Tab -->
-    <div id="bulk-skill-tab" class="tab-content">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <label for="bulkSkillDropdown">Select Skill:</label>
-        <select id="bulkSkillDropdown"></select>
-        <label for="bulkAgentDropdownForSkill">Or Select Agent:</label>
-        <select id="bulkAgentDropdownForSkill"></select>
-        <label for="bulkManagementUnitDropdownForSkill">Or Select Management Unit:</label>
-        <select id="bulkManagementUnitDropdownForSkill"></select>
-      </div>
-
-      <button id="fetchBulkAgentsForSkill">Get Agents</button>
-
-      <table id="bulkAgentsTableForSkill">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAllBulkAgentsForSkill" class="select-all-checkbox"></th>
-            <th>Agent</th>
-            <th>Current Skill</th>
-            <th>Skill Change</th>
-            <th>Proficiency</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <button id="updateBulkSkills">Update Selected Skills</button>
-    </div>
-
-    <!-- Bulk Queue Assignment Tab -->
-    <div id="bulk-queue-tab" class="tab-content">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <label for="bulkQueueDropdown">Select Queue:</label>
-        <select id="bulkQueueDropdown"></select>
-        <label for="bulkAgentDropdownForQueue">Or Select Agent:</label>
-        <select id="bulkAgentDropdownForQueue"></select>
-        <label for="bulkManagementUnitDropdownForQueue">Or Select Management Unit:</label>
-        <select id="bulkManagementUnitDropdownForQueue"></select>
-      </div>
-
-      <button id="fetchBulkAgentsForQueue">Get Agents</button>
-
-      <table id="bulkAgentsTableForQueue">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAllBulkAgentsForQueue" class="select-all-checkbox"></th>
-            <th>Agent</th>
-            <th>Current Queue</th>
-            <th>Queue Change</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <button id="updateBulkQueues">Update Selected Queues</button>
     </div>
   </div>
 
@@ -377,70 +318,55 @@
 
     function populateSkillDropdown() {
       const skillDropdown = document.getElementById('skillDropdown');
-      const bulkSkillDropdown = document.getElementById('bulkSkillDropdown');
-      
       skillDropdown.innerHTML = '<option value="">Select Skill</option>';
-      bulkSkillDropdown.innerHTML = '<option value="">Select Skill</option>';
-      
       availableSkills.forEach(skill => {
         const option = document.createElement('option');
         option.value = skill.id;
         option.textContent = skill.name;
         skillDropdown.appendChild(option);
-        bulkSkillDropdown.appendChild(option.cloneNode(true));
       });
     }
 
     function populateQueueDropdown() {
       const queueDropdown = document.getElementById('queueDropdown');
-      const bulkQueueDropdown = document.getElementById('bulkQueueDropdown');
-      
       queueDropdown.innerHTML = '<option value="">Select Queue</option>';
-      bulkQueueDropdown.innerHTML = '<option value="">Select Queue</option>';
-      
       availableQueues.forEach(queue => {
         const option = document.createElement('option');
         option.value = queue.id;
         option.textContent = queue.name;
         queueDropdown.appendChild(option);
-        bulkQueueDropdown.appendChild(option.cloneNode(true));
       });
     }
 
     function populateAgentDropdowns() {
       const agentDropdownForSkill = document.getElementById('agentDropdownForSkill');
       const agentDropdownForQueue = document.getElementById('agentDropdownForQueue');
-      const bulkAgentDropdownForSkill = document.getElementById('bulkAgentDropdownForSkill');
-      const bulkAgentDropdownForQueue = document.getElementById('bulkAgentDropdownForQueue');
       
-      const allDropdowns = [agentDropdownForSkill, agentDropdownForQueue, bulkAgentDropdownForSkill, bulkAgentDropdownForQueue];
+      agentDropdownForSkill.innerHTML = '<option value="">Select Agent</option>';
+      agentDropdownForQueue.innerHTML = '<option value="">Select Agent</option>';
       
-      allDropdowns.forEach(dropdown => {
-        dropdown.innerHTML = '<option value="">Select Agent</option>';
-        availableAgents.forEach(agent => {
-          const option = document.createElement('option');
-          option.value = agent.id;
-          option.textContent = agent.name;
-          dropdown.appendChild(option);
-        });
+      availableAgents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = agent.name;
+        agentDropdownForSkill.appendChild(option);
+        agentDropdownForQueue.appendChild(option.cloneNode(true));
       });
     }
 
     function populateManagementUnitDropdowns() {
       const skillDropdown = document.getElementById('managementUnitDropdownForSkill');
       const queueDropdown = document.getElementById('managementUnitDropdownForQueue');
-      const bulkSkillDropdown = document.getElementById('bulkManagementUnitDropdownForSkill');
-      const bulkQueueDropdown = document.getElementById('bulkManagementUnitDropdownForQueue');
       
-      const allDropdowns = [skillDropdown, queueDropdown, bulkSkillDropdown, bulkQueueDropdown];
-      allDropdowns.forEach(dropdown => {
-        dropdown.innerHTML = '<option value="">Select Management Unit</option>';
-        availableManagementUnits.forEach(unit => {
-          let option = document.createElement("option");
-          option.value = unit.id;
-          option.textContent = unit.name;
-          dropdown.appendChild(option);
-        });
+      skillDropdown.innerHTML = '<option value="">Select Management Unit</option>';
+      queueDropdown.innerHTML = '<option value="">Select Management Unit</option>';
+      
+      availableManagementUnits.forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit.id;
+        option.textContent = unit.name;
+        skillDropdown.appendChild(option);
+        queueDropdown.appendChild(option.cloneNode(true));
       });
     }
 
@@ -465,8 +391,6 @@
     function setupEventListeners(token) {
       document.getElementById('fetchAgentsForSkill').addEventListener('click', () => fetchAgentsForSkill(token));
       document.getElementById('fetchAgentsForQueue').addEventListener('click', () => fetchAgentsForQueue(token));
-      document.getElementById('fetchBulkAgentsForSkill').addEventListener('click', () => fetchBulkAgentsForSkill(token));
-      document.getElementById('fetchBulkAgentsForQueue').addEventListener('click', () => fetchBulkAgentsForQueue(token));
     }
 
     async function fetchAgentsForSkill(token) {
@@ -490,7 +414,13 @@
         agents = await fetchAgentsByManagementUnit(managementUnitId, token);
       }
 
-      populateTable(agents, 'skill');
+      // Fetch skills for each agent
+      const agentsWithSkills = await Promise.all(agents.map(async agent => {
+        const skills = await fetchAgentSkills(agent.id, token);
+        return { ...agent, skills };
+      }));
+
+      populateTable(agentsWithSkills, 'skill');
     }
 
     async function fetchAgentsForQueue(token) {
@@ -514,55 +444,13 @@
         agents = await fetchAgentsByManagementUnit(managementUnitId, token);
       }
 
-      populateTable(agents, 'queue');
-    }
+      // Fetch queues for each agent
+      const agentsWithQueues = await Promise.all(agents.map(async agent => {
+        const queues = await fetchAgentQueues(agent.id, token);
+        return { ...agent, queues };
+      }));
 
-    async function fetchBulkAgentsForSkill(token) {
-      const skillId = document.getElementById('bulkSkillDropdown').value;
-      const agentId = document.getElementById('bulkAgentDropdownForSkill').value;
-      const managementUnitId = document.getElementById('bulkManagementUnitDropdownForSkill').value;
-
-      if (!skillId && !agentId && !managementUnitId) {
-        alert('Please select a skill, agent, or management unit first.');
-        return;
-      }
-
-      let agents = [];
-      if (skillId) {
-        agents = await fetchAgentsBySkill(skillId, token);
-      } else if (agentId) {
-        // If an agent is selected, return only that agent
-        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
-        agents = selectedAgent ? [selectedAgent] : [];
-      } else if (managementUnitId) {
-        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
-      }
-
-      populateTable(agents, 'bulk-skill');
-    }
-
-    async function fetchBulkAgentsForQueue(token) {
-      const queueId = document.getElementById('bulkQueueDropdown').value;
-      const agentId = document.getElementById('bulkAgentDropdownForQueue').value;
-      const managementUnitId = document.getElementById('bulkManagementUnitDropdownForQueue').value;
-
-      if (!queueId && !agentId && !managementUnitId) {
-        alert('Please select a queue, agent, or management unit first.');
-        return;
-      }
-
-      let agents = [];
-      if (queueId) {
-        agents = await fetchAgentsByQueue(queueId, token);
-      } else if (agentId) {
-        // If an agent is selected, return only that agent
-        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
-        agents = selectedAgent ? [selectedAgent] : [];
-      } else if (managementUnitId) {
-        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
-      }
-
-      populateTable(agents, 'bulk-queue');
+      populateTable(agentsWithQueues, 'queue');
     }
 
     async function fetchAgentsBySkill(skillId, token) {
@@ -590,7 +478,7 @@
           id: member.user.id,
           name: member.user.name,
           queueId: queueId, // Store the queue ID for later use
-          queueName: data.name // Store the queue name for display
+          queueName: member.queue.name // Extract the queue name from the member object
         }));
       } catch (error) {
         console.error("Error fetching agents by queue:", error);
@@ -615,22 +503,50 @@
       }
     }
 
+    async function fetchAgentSkills(agentId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingskills`;
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agent skills:", error);
+        return [];
+      }
+    }
+
+    async function fetchAgentQueues(agentId, token) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingqueues`;
+      try {
+        const response = await fetch(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return data.entities || [];
+      } catch (error) {
+        console.error("Error fetching agent queues:", error);
+        return [];
+      }
+    }
+
     function populateTable(agents, type) {
-      const tableBody = document.querySelector(`#${type === 'bulk-skill' ? 'bulkAgentsTableForSkill' : type === 'bulk-queue' ? 'bulkAgentsTableForQueue' : 'agentsTableFor' + type.charAt(0).toUpperCase() + type.slice(1)} tbody`);
+      const tableBody = document.querySelector(`#${type === 'skill' ? 'agentsTableForSkill' : 'agentsTableForQueue'} tbody`);
       tableBody.innerHTML = "";
       agents.forEach(agent => {
         let row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${agent.id}"></td>
           <td>${agent.name || 'N/A'}</td> <!-- Ensure name is displayed -->
-          <td>${agent.queueName || 'No Skill Assigned'}</td>
+          <td>${type === 'skill' ? agent.skills.map(skill => skill.name).join(', ') : agent.queues.map(queue => queue.name).join(', ')}</td>
           <td>
             <select data-user-id="${agent.id}">
               <option value="">Select</option>
-              ${type === 'skill' || type === 'bulk-skill' ? availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('') : availableQueues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}
+              ${type === 'skill' ? availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('') : availableQueues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}
             </select>
           </td>
-          ${type === 'skill' || type === 'bulk-skill' ? `<td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td><td><input type="checkbox" class="delete-skill-checkbox" data-user-id="${agent.id}"></td>` : ''}
+          ${type === 'skill' ? `<td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td><td><input type="checkbox" class="delete-skill-checkbox" data-user-id="${agent.id}"></td>` : ''}
         `;
         tableBody.appendChild(row);
       });

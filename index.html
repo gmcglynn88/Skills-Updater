@@ -86,7 +86,6 @@
         <div class="controls">
           <div>
             <label for="agentDropdownRemove">Select Agents</label>
-            <!-- New checkbox dropdown -->
             <div id="agentDropdownRemove" class="checkbox-dropdown"></div>
           </div>
           <div>
@@ -106,7 +105,7 @@
             <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="note">Tip: Choosing only a Skill will show users who have that skill directly (groups are shown but not removable here).</div>
+        <div class="note">Tip: Choosing only a Skill shows users who have that skill directly assigned.</div>
       </div>
 
       <div class="card">
@@ -134,7 +133,6 @@
         <div class="controls">
           <div>
             <label for="agentDropdownAdd">Select Agents</label>
-            <!-- New checkbox dropdown -->
             <div id="agentDropdownAdd" class="checkbox-dropdown"></div>
           </div>
           <div>
@@ -364,7 +362,7 @@
       }
 
       // Events
-      trigger.addEventListener('click', (e) => {
+      trigger.addEventListener('click', () => {
         panel.classList.toggle('open');
         search.focus();
       });
@@ -517,15 +515,15 @@
           return;
         }
 
-        // Fetch skills (direct + groups) per user (batched)
+        // Fetch direct skills per user (batched)
         const usersWithSkills = await fetchSkillsForUsersBatched(users, 10);
 
-        // Filter by selected skill using DIRECT skills only
+        // Filter by selected skill (direct skills only are loaded)
         let filtered = usersWithSkills;
         if (skillId) {
-          const hasDirectSkill = skills => skills.some(s => s.source === 'direct' && s.id === skillId);
-          if (mode === 'remove') filtered = usersWithSkills.filter(({ skills }) => hasDirectSkill(skills));
-          else filtered = usersWithSkills.filter(({ skills }) => !hasDirectSkill(skills));
+          const hasSkill = skills => skills.some(s => s.id === skillId);
+          if (mode === 'remove') filtered = usersWithSkills.filter(({ skills }) => hasSkill(skills));
+          else filtered = usersWithSkills.filter(({ skills }) => !hasSkill(skills));
         }
 
         if (mode === 'remove') populateRemoveTable(filtered);
@@ -556,30 +554,7 @@
       return users;
     }
 
-    // === Skill groups + direct skills ===
-    async function fetchUserSkillGroupsForUser(userId) {
-      const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/skillgroups`;
-      try {
-        const res = await fetch(url, { headers: authHeaders() });
-        if (!res.ok) {
-          if (res.status === 404) return [];
-          const err = await safeJson(res);
-          throw new Error(err?.message || `Failed to fetch skill groups for user ${userId}`);
-        }
-        const data = await res.json();
-        const groups = (data?.entities || data || []);
-        return groups.map(g => ({
-          id: g.id,
-          name: g.name || 'Unnamed Skill Group',
-          source: 'skillgroup',
-          proficiency: null
-        }));
-      } catch (e) {
-        console.error(`Error fetching skill groups for user ${userId}:`, e);
-        return [];
-      }
-    }
-
+    // === Direct skills only ===
     async function fetchUserSkillsForUser(userId) {
       const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
       try {
@@ -590,14 +565,13 @@
           throw new Error(err?.message || `Failed to fetch skills for user ${userId}`);
         }
         const data = await res.json();
-        const direct = (data || []).map(s => ({
+        // API can return an array or {entities:[]}; support both.
+        const list = Array.isArray(data) ? data : (data.entities || []);
+        return (list || []).map(s => ({
           id: s.id,
           name: s.name || (availableSkills.find(as => as.id === s.id)?.name) || 'Unknown Skill',
-          proficiency: typeof s.proficiency === 'number' ? s.proficiency : null,
-          source: 'direct'
+          proficiency: typeof s.proficiency === 'number' ? s.proficiency : null
         }));
-        const groups = await fetchUserSkillGroupsForUser(userId);
-        return [...direct, ...groups];
       } catch (e) {
         console.error(`Error fetching skills for user ${userId}:`, e);
         return [];
@@ -628,17 +602,13 @@
       }
 
       usersWithSkills.forEach(({ user, skills }) => {
-        const directSkills = skills.filter(s => s.source === 'direct');
         const assignedText = skills.length
-          ? skills.map(s => s.source === 'skillgroup'
-              ? `${s.name} [Group]`
-              : `${s.name}${formatProf(s.proficiency)}`
-            ).join(', ')
-          : 'No Skills/Groups';
+          ? skills.map(s => `${s.name}${formatProf(s.proficiency)}`).join(', ')
+          : 'No Skills';
 
-        const skillOptions = directSkills.length
-          ? ['<option value="">Select Skill to Remove</option>', ...directSkills.map(s => `<option value="${s.id}">${s.name}${formatProf(s.proficiency)}</option>`)].join('')
-          : '<option value="">No Direct Skills Assigned</option>';
+        const skillOptions = skills.length
+          ? ['<option value="">Select Skill to Remove</option>', ...skills.map(s => `<option value="${s.id}">${s.name}${formatProf(s.proficiency)}</option>`)].join('')
+          : '<option value="">No Skills Assigned</option>';
 
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -646,7 +616,7 @@
           <td>${user.name}</td>
           <td>${assignedText}</td>
           <td>
-            <select data-user-id="${user.id}" class="skill-select-remove" ${directSkills.length ? '' : 'disabled'}>
+            <select data-user-id="${user.id}" class="skill-select-remove" ${skills.length ? '' : 'disabled'}>
               ${skillOptions}
             </select>
           </td>
@@ -670,18 +640,15 @@
       }
 
       usersWithSkills.forEach(({ user, skills }) => {
-        const assignedDirectIds = skills.filter(s => s.source === 'direct').map(s => s.id);
-        const choices = availableSkills.filter(s => !assignedDirectIds.includes(s.id));
+        const assignedIds = skills.map(s => s.id);
+        const choices = availableSkills.filter(s => !assignedIds.includes(s.id));
         const options = choices.length
           ? ['<option value="">Select Skill to Add</option>', ...choices.map(s => `<option value="${s.id}" ${s.id===preselectedSkillId?'selected':''}>${s.name}</option>`)].join('')
           : '<option value="">All Skills Assigned</option>';
 
         const assignedText = skills.length
-          ? skills.map(s => s.source === 'skillgroup'
-              ? `${s.name} [Group]`
-              : `${s.name}${formatProf(s.proficiency)}`
-            ).join(', ')
-          : 'No Skills/Groups';
+          ? skills.map(s => `${s.name}${formatProf(s.proficiency)}`).join(', ')
+          : 'No Skills';
 
         const disabled = choices.length ? '' : 'disabled';
         const defaultProf = 3.0;

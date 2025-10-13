@@ -56,6 +56,7 @@
     <div class="tab-container">
       <div class="tab active" data-tab="remove">Remove Skills</div>
       <div class="tab" data-tab="add">Add Skills</div>
+      <div class="tab" data-tab="change">Change Proficiency</div>
     </div>
 
     <!-- Remove Skills Tab -->
@@ -153,6 +154,54 @@
         <button id="addSkills" class="full-width-btn" disabled>Add Selected Skills to Selected Users</button>
       </div>
     </div>
+
+    <!-- Change Proficiency Tab -->
+    <div id="changeTab" class="tab-content">
+      <div class="selection-section">
+        <h3>Search Options</h3>
+        <div class="controls">
+          <div>
+            <label for="agentDropdownChange">Select Agents</label>
+            <select id="agentDropdownChange" multiple class="multi-select">
+              <option value="">Loading agents...</option>
+            </select>
+          </div>
+          <div>
+            <label for="skillDropdownChange">Filter by Skill (optional)</label>
+            <select id="skillDropdownChange">
+              <option value="">Any Skill</option>
+            </select>
+          </div>
+          <div>
+            <label for="teamDropdownChange">Select Work Team</label>
+            <select id="teamDropdownChange">
+              <option value="">Select Team</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="fetchUsersChange" class="full-width-btn">Get Users</button>
+          </div>
+        </div>
+        <div class="muted">Pick users, then adjust the proficiency for the chosen skill. Clicky-click to nudge ±0.5.</div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 12px;">Routing Skills — Change Proficiency</h2>
+        <table id="userSkillsTableChange">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllUsersChange" class="select-all-checkbox"></th>
+              <th>Agent</th>
+              <th>Skills Assigned</th>
+              <th>Change To</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button id="updateProficiency" class="full-width-btn" disabled>Update Proficiency for Selected</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -177,7 +226,7 @@
       if (token) {
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
-        initializeApp(token);
+        initializeApp();
       } else {
         window.location.href = oauthUrl;
       }
@@ -191,15 +240,11 @@
     }
 
     // ===== Init =====
-    async function initializeApp(token) {
+    async function initializeApp() {
       try {
-        await Promise.all([
-          fetchAllUsers(token),
-          fetchAllTeams(token),
-          fetchAllSkills(token)
-        ]);
+        await Promise.all([fetchAllUsers(), fetchAllTeams(), fetchAllSkills()]);
         populateDropdowns();
-        setupEvents(token);
+        setupEvents();
       } catch (err) {
         console.error('Init error:', err);
         showMessage('Error initializing application. Please try again.');
@@ -208,7 +253,7 @@
     }
 
     // ===== Fetch lists =====
-    async function fetchAllUsers(token) {
+    async function fetchAllUsers() {
       let all=[], page=1, size=100, total=0;
       do {
         const url = `https://api.mypurecloud.ie/api/v2/users?pageNumber=${page}&pageSize=${size}`;
@@ -221,7 +266,7 @@
       availableUsers = all;
     }
 
-    async function fetchAllTeams(token) {
+    async function fetchAllTeams() {
       let all=[], page=1, size=100, total=0;
       do {
         const url = `https://api.mypurecloud.ie/api/v2/teams?pageNumber=${page}&pageSize=${size}`;
@@ -234,7 +279,7 @@
       availableTeams = all;
     }
 
-    async function fetchAllSkills(token) {
+    async function fetchAllSkills() {
       let all=[], page=1, size=100, total=0;
       do {
         const url = `https://api.mypurecloud.ie/api/v2/routing/skills?pageNumber=${page}&pageSize=${size}`;
@@ -252,12 +297,12 @@
 
     // ===== Dropdowns =====
     function populateDropdowns(){
-      populateAgentDropdown('agentDropdownRemove');
-      populateAgentDropdown('agentDropdownAdd');
-      populateTeamDropdown('teamDropdownRemove');
-      populateTeamDropdown('teamDropdownAdd');
-      populateSkillDropdown('skillDropdownRemove');
-      populateSkillDropdown('skillDropdownAdd');
+      // Agents for all tabs
+      ['Remove','Add','Change'].forEach(suffix => populateAgentDropdown('agentDropdown'+suffix));
+      // Teams for all tabs
+      ['Remove','Add','Change'].forEach(suffix => populateTeamDropdown('teamDropdown'+suffix));
+      // Skills for all tabs
+      ['Remove','Add','Change'].forEach(suffix => populateSkillDropdown('skillDropdown'+suffix, suffix==='Change' ? 'Any Skill' : 'Select Skill'));
     }
 
     function populateAgentDropdown(id){
@@ -282,9 +327,9 @@
       });
     }
 
-    function populateSkillDropdown(id){
+    function populateSkillDropdown(id, first='Select Skill'){
       const el = document.getElementById(id);
-      el.innerHTML = '<option value="">Select Skill</option>';
+      el.innerHTML = `<option value="">${first}</option>`;
       availableSkills.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id; opt.textContent = s.name;
@@ -293,7 +338,8 @@
     }
 
     // ===== Events =====
-    function setupEvents(token){
+    function setupEvents(){
+      // tab switch
       document.querySelectorAll('.tab').forEach(tab=>{
         tab.addEventListener('click',()=>{
           document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -303,12 +349,12 @@
         });
       });
 
-      document.getElementById('fetchUsersRemove').addEventListener('click',()=>fetchUsers('remove',token));
-      document.getElementById('fetchUsersAdd').addEventListener('click',()=>fetchUsers('add',token));
+      // fetch buttons
+      document.getElementById('fetchUsersRemove').addEventListener('click',()=>fetchUsers('remove'));
+      document.getElementById('fetchUsersAdd').addEventListener('click',()=>fetchUsers('add'));
+      document.getElementById('fetchUsersChange').addEventListener('click',()=>fetchUsers('change'));
 
-      document.getElementById('removeSkills').addEventListener('click',()=>removeSelectedSkills(token));
-      document.getElementById('addSkills').addEventListener('click',()=>addSelectedSkills(token));
-
+      // bulk select
       document.getElementById('selectAllUsersRemove').addEventListener('change', function(){
         document.querySelectorAll('#userSkillsTableRemove tbody input[type="checkbox"]').forEach(cb=>cb.checked=this.checked);
         updateRemoveButtonState();
@@ -317,10 +363,19 @@
         document.querySelectorAll('#userSkillsTableAdd tbody input[type="checkbox"]').forEach(cb=>cb.checked=this.checked);
         updateAddButtonState();
       });
+      document.getElementById('selectAllUsersChange').addEventListener('change', function(){
+        document.querySelectorAll('#userSkillsTableChange tbody input[type="checkbox"]').forEach(cb=>cb.checked=this.checked);
+        updateChangeButtonState();
+      });
+
+      // action buttons
+      document.getElementById('removeSkills').addEventListener('click',()=>removeSelectedSkills());
+      document.getElementById('addSkills').addEventListener('click',()=>addSelectedSkills());
+      document.getElementById('updateProficiency').addEventListener('click',()=>updateSelectedProficiency());
     }
 
     // ===== Fetch users & their skills =====
-    async function fetchUsers(mode, token){
+    async function fetchUsers(mode){
       const agentIds = Array.from(document.getElementById(`agentDropdown${cap(mode)}`).selectedOptions).map(o=>o.value);
       const teamId = document.getElementById(`teamDropdown${cap(mode)}`).value;
       const skillId = document.getElementById(`skillDropdown${cap(mode)}`).value;
@@ -337,9 +392,9 @@
       if (agentIds.length){
         users = agentIds.map(id => availableUsers.find(u=>u.id===id)).filter(Boolean);
       } else if (teamId){
-        users = await usersFromTeam(teamId, token);
+        users = await usersFromTeam(teamId);
       } else if (skillId){
-        // scan all valid users (we’ll filter by skill after loading skills)
+        // scan all valid users (then filter after loading skills)
         users = availableUsers.filter(u => u.name && u.name.trim() && u.name !== 'Unknown User');
       }
 
@@ -349,24 +404,24 @@
       }
 
       const usersWithSkills = await Promise.all(users.map(async user=>{
-        const skills = await fetchUserSkills(user.id, token);
+        const skills = await fetchUserSkills(user.id);
         return { user, skills };
       }));
 
-      // If a Skill is selected, filter users by whether they have it (for remove) / don’t have it (for add)
+      // Filter by selected skill where appropriate
       let filtered = usersWithSkills;
       if (skillId){
         const hasSkill = (skills)=>skills.some(s=>s.id===skillId);
-        filtered = (mode==='remove')
-          ? usersWithSkills.filter(({skills})=>hasSkill(skills))
-          : usersWithSkills.filter(({skills})=>!hasSkill(skills));
+        if (mode==='remove' || mode==='change') filtered = usersWithSkills.filter(({skills})=>hasSkill(skills));
+        if (mode==='add') filtered = usersWithSkills.filter(({skills})=>!hasSkill(skills));
       }
 
       if (mode==='remove') populateRemoveTable(filtered);
-      else populateAddTable(filtered, skillId);
+      else if (mode==='add') populateAddTable(filtered, skillId);
+      else populateChangeTable(filtered, skillId);
     }
 
-    async function usersFromTeam(teamId, token){
+    async function usersFromTeam(teamId){
       const url = `https://api.mypurecloud.ie/api/v2/teams/${teamId}/members`;
       const res = await fetch(url, { headers: authHeaders() });
       if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch team ${teamId} members`);
@@ -377,19 +432,15 @@
         .filter(u => u && u.name && u.name.trim() && u.name!=='Unknown User');
     }
 
-    // Core: per-user direct skills
-    async function fetchUserSkills(userId, token){
+    // Direct skills
+    async function fetchUserSkills(userId){
       const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
       try{
         const res = await fetch(url, { headers: authHeaders() });
         if (!res.ok){
-          // Show a helpful note for permissions
-          if (res.status === 403) {
-            console.warn(`403 reading skills for ${userId} – check OAuth scopes`);
-            return [{ id:'__nope__', name:'(cannot read skills – missing permission)', proficiency:null, _readonly:true }];
-          }
           if (res.status === 404) return [];
-          throw new Error((await safeJson(res))?.message || `Failed to fetch skills for user ${userId}`);
+          console.warn(`Skill fetch ${userId} failed:`, res.status);
+          return [];
         }
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.entities || []);
@@ -409,21 +460,16 @@
       const tbody = document.querySelector('#userSkillsTableRemove tbody');
       tbody.innerHTML = '';
       if (!rows.length){
-        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
-        updateRemoveButtonState();
-        return;
+        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>'; updateRemoveButtonState(); return;
       }
-
       rows.forEach(({user, skills})=>{
         const assignedText = skills.length
-          ? skills.map(s => s.name + (s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:``)).join(', ')
+          ? skills.map(s => `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:``}`).join(', ')
           : 'No Skills';
 
         const options = skills.length
-          ? ['<option value="">Select Skill to Remove</option>', ...skills.filter(s=>!s._readonly).map(s => `<option value="${s.id}">${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}</option>`)].join('')
+          ? ['<option value="">Select Skill to Remove</option>', ...skills.map(s => `<option value="${s.id}">${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}</option>`)].join('')
           : '<option value="">No Skills Assigned</option>';
-
-        const disabled = skills.filter(s=>!s._readonly).length ? '' : 'disabled';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -431,7 +477,7 @@
           <td>${user.name}</td>
           <td>${assignedText}</td>
           <td>
-            <select data-user-id="${user.id}" class="skill-select-remove" ${disabled}>
+            <select data-user-id="${user.id}" class="skill-select-remove" ${skills.length?'':'disabled'}>
               ${options}
             </select>
           </td>
@@ -444,28 +490,23 @@
       updateRemoveButtonState();
     }
 
-    function populateAddTable(rows, preselectSkillId=''){
+    function populateAddTable(rows, preselectedSkillId=''){
       const tbody = document.querySelector('#userSkillsTableAdd tbody');
       tbody.innerHTML = '';
       if (!rows.length){
-        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
-        updateAddButtonState();
-        return;
+        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>'; updateAddButtonState(); return;
       }
 
       rows.forEach(({user, skills})=>{
         const assignedIds = skills.map(s=>s.id);
         const choices = availableSkills.filter(s => !assignedIds.includes(s.id));
-
         const options = choices.length
-          ? ['<option value="">Select Skill to Add</option>', ...choices.map(s => `<option value="${s.id}" ${s.id===preselectSkillId?'selected':''}>${s.name}</option>`)].join('')
+          ? ['<option value="">Select Skill to Add</option>', ...choices.map(s => `<option value="${s.id}" ${s.id===preselectedSkillId?'selected':''}>${s.name}</option>`)].join('')
           : '<option value="">All Skills Assigned</option>';
 
         const assignedText = skills.length
-          ? skills.map(s => s.name + (s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:``)).join(', ')
+          ? skills.map(s => `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:``}`).join(', ')
           : 'No Skills';
-
-        const disabled = choices.length ? '' : 'disabled';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -474,10 +515,10 @@
           <td>${assignedText}</td>
           <td>
             <div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;align-items:center;">
-              <select data-user-id="${user.id}" class="skill-select-add" ${disabled}>${options}</select>
+              <select data-user-id="${user.id}" class="skill-select-add" ${choices.length?'':'disabled'}>${options}</select>
               <div class="prof-wrap">
                 <button type="button" class="tiny-btn" data-act="dec" data-user-id="${user.id}">−</button>
-                <input type="number" step="0.5" min="1" max="5" value="3.0" class="prof-input" data-user-id="${user.id}" ${disabled}/>
+                <input type="number" step="0.5" min="1" max="5" value="3.0" class="prof-input" data-user-id="${user.id}" ${choices.length?'':'disabled'} />
                 <button type="button" class="tiny-btn" data-act="inc" data-user-id="${user.id}">+</button>
               </div>
             </div>
@@ -486,7 +527,6 @@
         tbody.appendChild(tr);
       });
 
-      // handlers
       document.querySelectorAll('.user-checkbox-add').forEach(cb => cb.addEventListener('change', updateAddButtonState));
       document.querySelectorAll('.skill-select-add').forEach(sel => sel.addEventListener('change', updateAddButtonState));
       document.querySelectorAll('.prof-input').forEach(inp => {
@@ -501,11 +541,92 @@
         const inp = document.querySelector(`.prof-input[data-user-id="${btn.dataset.userId}"]`);
         nudgeProf(inp, -0.5); updateAddButtonState();
       }));
-
       updateAddButtonState();
     }
 
-    // ===== Button state =====
+    function populateChangeTable(rows, preselectedSkillId=''){
+      const tbody = document.querySelector('#userSkillsTableChange tbody');
+      tbody.innerHTML = '';
+      if (!rows.length){
+        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>'; updateChangeButtonState(); return;
+      }
+
+      rows.forEach(({user, skills})=>{
+        const direct = skills; // already direct skills
+        const assignedText = direct.length
+          ? direct.map(s => `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:``}`).join(', ')
+          : 'No Skills';
+
+        const options = direct.length
+          ? direct.map(s => `<option value="${s.id}" data-prof="${s.proficiency!=null?s.proficiency:''}" ${preselectedSkillId && preselectedSkillId===s.id?'selected':''}>${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}</option>`).join('')
+          : '';
+
+        // Determine initial selection and prof
+        let initialProf = 3.0;
+        if (direct.length){
+          const selectedSkill = preselectedSkillId ? direct.find(s=>s.id===preselectedSkillId) : direct[0];
+          if (selectedSkill && typeof selectedSkill.proficiency==='number') initialProf = selectedSkill.proficiency;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-change" ${direct.length?'':'disabled'}></td>
+          <td>${user.name}</td>
+          <td>${assignedText}</td>
+          <td>
+            ${
+              direct.length
+              ? `<div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;align-items:center;">
+                  <select data-user-id="${user.id}" class="skill-select-change">${options}</select>
+                  <div class="prof-wrap">
+                    <button type="button" class="tiny-btn" data-act="dec-change" data-user-id="${user.id}">−</button>
+                    <input type="number" step="0.5" min="1" max="5" value="${initialProf.toFixed(1)}" class="prof-input-change" data-user-id="${user.id}"/>
+                    <button type="button" class="tiny-btn" data-act="inc-change" data-user-id="${user.id}">+</button>
+                  </div>
+                </div>`
+              : `<span class="muted">No direct skills to change</span>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Sync selected skill -> input value
+      document.querySelectorAll('.skill-select-change').forEach(sel=>{
+        sel.addEventListener('change', ()=>{
+          const uid = sel.getAttribute('data-user-id');
+          const opt = sel.selectedOptions[0];
+          const prof = parseFloat(opt?.dataset?.prof ?? '3.0');
+          const inp = document.querySelector(`.prof-input-change[data-user-id="${uid}"]`);
+          if (inp){ inp.value = clampProf(prof).toFixed(1); }
+          updateChangeButtonState();
+        });
+      });
+
+      // Proficiency controls
+      document.querySelectorAll('.prof-input-change').forEach(inp=>{
+        inp.addEventListener('input', ()=>{ normalizeProf(inp); updateChangeButtonState(); });
+        inp.addEventListener('blur', ()=>{ normalizeProf(inp,true); updateChangeButtonState(); });
+      });
+      document.querySelectorAll('[data-act="inc-change"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const inp = document.querySelector(`.prof-input-change[data-user-id="${btn.dataset.userId}"]`);
+          nudgeProf(inp, +0.5); updateChangeButtonState();
+        });
+      });
+      document.querySelectorAll('[data-act="dec-change"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const inp = document.querySelector(`.prof-input-change[data-user-id="${btn.dataset.userId}"]`);
+          nudgeProf(inp, -0.5); updateChangeButtonState();
+        });
+      });
+
+      // Row checkbox changes
+      document.querySelectorAll('.user-checkbox-change').forEach(cb=>cb.addEventListener('change', updateChangeButtonState));
+      updateChangeButtonState();
+    }
+
+    // ===== Button states =====
     function updateRemoveButtonState(){
       const btn = document.getElementById('removeSkills');
       const checked = [...document.querySelectorAll('.user-checkbox-remove:checked')];
@@ -532,8 +653,22 @@
       btn.disabled = !ok;
     }
 
+    function updateChangeButtonState(){
+      const btn = document.getElementById('updateProficiency');
+      const checked = [...document.querySelectorAll('.user-checkbox-change:checked')];
+      let ok = checked.length>0;
+      checked.forEach(cb=>{
+        const uid = cb.getAttribute('data-user-id');
+        const sel = document.querySelector(`.skill-select-change[data-user-id="${uid}"]`);
+        const inp = document.querySelector(`.prof-input-change[data-user-id="${uid}"]`);
+        if (!sel || !sel.value) ok=false;
+        if (!inp || !validProf(inp.value)) ok=false;
+      });
+      btn.disabled = !ok;
+    }
+
     // ===== Actions =====
-    async function removeSelectedSkills(token){
+    async function removeSelectedSkills(){
       const ops = [];
       document.querySelectorAll('.user-checkbox-remove:checked').forEach(cb=>{
         const uid = cb.getAttribute('data-user-id');
@@ -545,15 +680,11 @@
       const btn = document.getElementById('removeSkills');
       try{
         btn.disabled=true; btn.textContent='Processing...';
-        const results = await Promise.allSettled(ops.map(op => removeSkillFromUser(op.userId, op.skillId, token)));
+        const results = await Promise.allSettled(ops.map(op => removeSkillFromUser(op.userId, op.skillId)));
         const failures = results.filter(r=>r.status==='rejected');
-        if (failures.length){
-          console.error('Some removals failed:', failures);
-          showMessage(`Completed with ${failures.length} error(s). Check console for details.`);
-        } else {
-          showMessage('All skill removals completed successfully!','success');
-        }
-        await fetchUsers('remove',token);
+        if (failures.length){ showMessage(`Completed with ${failures.length} error(s). Check console for details.`); }
+        else { showMessage('All skill removals completed successfully!','success'); }
+        await fetchUsers('remove');
       } catch(e){
         console.error('Remove error:', e);
         showMessage(`Failed to remove skills: ${e.message}`);
@@ -562,7 +693,7 @@
       }
     }
 
-    async function addSelectedSkills(token){
+    async function addSelectedSkills(){
       const ops = [];
       document.querySelectorAll('.user-checkbox-add:checked').forEach(cb=>{
         const uid = cb.getAttribute('data-user-id');
@@ -580,16 +711,15 @@
       const btn = document.getElementById('addSkills');
       try{
         btn.disabled=true; btn.textContent='Processing...';
-        const results = await Promise.allSettled(ops.map(op => addSkillToUser(op.userId, op.id, op.proficiency, token)));
+        const results = await Promise.allSettled(ops.map(op => addOrUpdateSkill(op.userId, op.id, op.proficiency)));
         const failures = results.filter(r=>r.status==='rejected');
         if (failures.length){
           const msgs = failures.map(f => f.reason?.message || 'Unknown error').join('; ');
-          console.error('Some additions failed:', failures);
           showMessage(`Completed with ${failures.length} error(s): ${msgs}`);
         } else {
           showMessage('All skill additions completed successfully!','success');
         }
-        await fetchUsers('add',token);
+        await fetchUsers('add');
       } catch(e){
         console.error('Add error:', e);
         showMessage(`Failed to add skills: ${e.message}`);
@@ -598,18 +728,56 @@
       }
     }
 
-    async function removeSkillFromUser(userId, skillId, token){
+    async function updateSelectedProficiency(){
+      const ops = [];
+      document.querySelectorAll('.user-checkbox-change:checked').forEach(cb=>{
+        const uid = cb.getAttribute('data-user-id');
+        const sel = document.querySelector(`.skill-select-change[data-user-id="${uid}"]`);
+        const inp = document.querySelector(`.prof-input-change[data-user-id="${uid}"]`);
+        if (sel && sel.value && validProf(inp.value)){
+          ops.push({ userId: uid, id: sel.value, proficiency: clampProf(parseFloat(inp.value)) });
+        }
+      });
+      if (!ops.length){
+        showMessage('No valid operations to perform. Please ensure you selected users, a skill, and a valid proficiency.');
+        return;
+      }
+
+      const btn = document.getElementById('updateProficiency');
+      try{
+        btn.disabled=true; btn.textContent='Processing...';
+        // POST with same skill id updates proficiency in Genesys Cloud
+        const results = await Promise.allSettled(ops.map(op => addOrUpdateSkill(op.userId, op.id, op.proficiency)));
+        const failures = results.filter(r=>r.status==='rejected');
+        if (failures.length){
+          const msgs = failures.map(f => f.reason?.message || 'Unknown error').join('; ');
+          showMessage(`Completed with ${failures.length} error(s): ${msgs}`);
+        } else {
+          showMessage('Proficiency updated successfully!','success');
+        }
+        await fetchUsers('change');
+      } catch(e){
+        console.error('Change error:', e);
+        showMessage(`Failed to update proficiency: ${e.message}`);
+      } finally {
+        btn.disabled=false; btn.textContent='Update Proficiency for Selected';
+      }
+    }
+
+    // ===== API calls =====
+    async function removeSkillFromUser(userId, skillId){
       const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills/${skillId}`;
       const res = await fetch(url, { method:'DELETE', headers: authHeaders() });
       if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to remove skill ${skillId} from user ${userId}`);
       return true;
     }
 
-    async function addSkillToUser(userId, skillId, proficiency, token){
+    // Genesys accepts POST to add OR update proficiency for an existing routing skill
+    async function addOrUpdateSkill(userId, skillId, proficiency){
       const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
       const body = { id: skillId, proficiency: Number(proficiency) };
       const res = await fetch(url, { method:'POST', headers: authHeaders(), body: JSON.stringify(body) });
-      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to add skill ${skillId} to user ${userId}`);
+      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to set skill ${skillId} for user ${userId}`);
       return true;
     }
 

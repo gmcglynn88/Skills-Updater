@@ -92,7 +92,7 @@
             <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="note">Tip: Choosing only a Skill will scan users to show just those who currently have it.</div>
+        <div class="note">Tip: Choosing only a Skill will scan users and show only those with that skill directly assigned.</div>
       </div>
 
       <div class="card">
@@ -166,7 +166,7 @@
   <script>
     // ======== CONFIG ========
     const clientId = 'd4529142-7340-4cd8-a9f9-f3a4d25670df';
-    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // <- updated
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/';
     const responseType = 'token';
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
@@ -185,7 +185,7 @@
       if (token) {
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
-        initializeApp(token);
+        initializeApp();
       } else {
         window.location.href = oauthUrl;
       }
@@ -199,15 +199,15 @@
     }
 
     // ======== INIT ========
-    async function initializeApp(token) {
+    async function initializeApp() {
       try {
         await Promise.all([
-          fetchAllUsers(token),
-          fetchAllTeams(token),
-          fetchAllSkills(token)
+          fetchAllUsers(),
+          fetchAllTeams(),
+          fetchAllSkills()
         ]);
         populateDropdowns();
-        setupEventListeners(token);
+        setupEventListeners();
       } catch (error) {
         console.error("Initialization error:", error);
         showMessage("Error initializing application. Please try again.");
@@ -363,6 +363,7 @@
           const teamMembers = await fetchTeamMembers(teamId);
           users = await processTeamMembers(teamMembers);
         } else if (skillId) {
+          // No agents/teams picked: start from all users then filter later by direct skill
           users = availableUsers.filter(u => u.name && u.name.trim() && u.name !== 'Unknown User');
         }
 
@@ -371,14 +372,18 @@
           return;
         }
 
-        // Fetch skills per user (batched to be gentle on rate limits)
+        // Fetch skills (direct + groups) per user (batched)
         const usersWithSkills = await fetchSkillsForUsersBatched(users, 10);
 
-        // Filter rows based on skill filter (if given)
+        // Filter by selected skill using DIRECT skills only
         let filtered = usersWithSkills;
         if (skillId) {
-          if (mode === 'remove') filtered = usersWithSkills.filter(({ skills }) => skills.some(s => s.id === skillId));
-          else filtered = usersWithSkills.filter(({ skills }) => !skills.some(s => s.id === skillId));
+          const hasDirectSkill = skills => skills.some(s => s.source === 'direct' && s.id === skillId);
+          if (mode === 'remove') {
+            filtered = usersWithSkills.filter(({ skills }) => hasDirectSkill(skills));
+          } else {
+            filtered = usersWithSkills.filter(({ skills }) => !hasDirectSkill(skills));
+          }
         }
 
         if (mode === 'remove') populateRemoveTable(filtered);
@@ -409,20 +414,48 @@
       return users;
     }
 
+    // === NEW: fetch skill groups and merge with direct skills ===
+    async function fetchUserSkillGroupsForUser(userId) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/skillgroups`;
+      try {
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) {
+          if (res.status === 404) return [];
+          const err = await safeJson(res);
+          throw new Error(err?.message || `Failed to fetch skill groups for user ${userId}`);
+        }
+        const data = await res.json();
+        const groups = (data?.entities || data || []);
+        return groups.map(g => ({
+          id: g.id,
+          name: g.name || 'Unnamed Skill Group',
+          source: 'skillgroup',
+          proficiency: null
+        }));
+      } catch (e) {
+        console.error(`Error fetching skill groups for user ${userId}:`, e);
+        return [];
+      }
+    }
+
     async function fetchUserSkillsForUser(userId) {
       const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
       try {
         const res = await fetch(url, { headers: authHeaders() });
         if (!res.ok) {
           if (res.status === 404) return [];
-          throw new Error((await res.json()).message || `Failed to fetch skills for user ${userId}`);
+          const err = await safeJson(res);
+          throw new Error(err?.message || `Failed to fetch skills for user ${userId}`);
         }
         const data = await res.json();
-        return (data || []).map(s => ({
+        const direct = (data || []).map(s => ({
           id: s.id,
           name: s.name || (availableSkills.find(as => as.id === s.id)?.name) || 'Unknown Skill',
-          proficiency: typeof s.proficiency === 'number' ? s.proficiency : null
+          proficiency: typeof s.proficiency === 'number' ? s.proficiency : null,
+          source: 'direct'
         }));
+        const groups = await fetchUserSkillGroupsForUser(userId);
+        return [...direct, ...groups];
       } catch (e) {
         console.error(`Error fetching skills for user ${userId}:`, e);
         return [];
@@ -453,17 +486,25 @@
       }
 
       usersWithSkills.forEach(({ user, skills }) => {
-        const row = document.createElement("tr");
-        const skillOptions = skills.length
-          ? ['<option value="">Select Skill to Remove</option>', ...skills.map(s => `<option value="${s.id}">${s.name}${formatProf(s.proficiency)}</option>`)].join('')
-          : '<option value="">No Skills Assigned</option>';
+        const directSkills = skills.filter(s => s.source === 'direct');
+        const assignedText = skills.length
+          ? skills.map(s => s.source === 'skillgroup'
+              ? `${s.name} [Group]`
+              : `${s.name}${formatProf(s.proficiency)}`
+            ).join(', ')
+          : 'No Skills/Groups';
 
+        const skillOptions = directSkills.length
+          ? ['<option value="">Select Skill to Remove</option>', ...directSkills.map(s => `<option value="${s.id}">${s.name}${formatProf(s.proficiency)}</option>`)].join('')
+          : '<option value="">No Direct Skills Assigned</option>';
+
+        const row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-remove"></td>
           <td>${user.name}</td>
-          <td>${skills.length ? skills.map(s => `${s.name}${formatProf(s.proficiency)}`).join(', ') : 'No Skills'}</td>
+          <td>${assignedText}</td>
           <td>
-            <select data-user-id="${user.id}" class="skill-select-remove" ${skills.length ? '' : 'disabled'}>
+            <select data-user-id="${user.id}" class="skill-select-remove" ${directSkills.length ? '' : 'disabled'}>
               ${skillOptions}
             </select>
           </td>
@@ -487,20 +528,27 @@
       }
 
       usersWithSkills.forEach(({ user, skills }) => {
-        const assignedIds = skills.map(s => s.id);
-        const choices = availableSkills.filter(s => !assignedIds.includes(s.id));
+        const assignedDirectIds = skills.filter(s => s.source === 'direct').map(s => s.id);
+        const choices = availableSkills.filter(s => !assignedDirectIds.includes(s.id));
         const options = choices.length
           ? ['<option value="">Select Skill to Add</option>', ...choices.map(s => `<option value="${s.id}" ${s.id===preselectedSkillId?'selected':''}>${s.name}</option>`)].join('')
           : '<option value="">All Skills Assigned</option>';
 
+        const assignedText = skills.length
+          ? skills.map(s => s.source === 'skillgroup'
+              ? `${s.name} [Group]`
+              : `${s.name}${formatProf(s.proficiency)}`
+            ).join(', ')
+          : 'No Skills/Groups';
+
         const disabled = choices.length ? '' : 'disabled';
-        const row = document.createElement("tr");
         const defaultProf = 3.0;
 
+        const row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-add"></td>
           <td>${user.name}</td>
-          <td>${skills.length ? skills.map(s => `${s.name}${formatProf(s.proficiency)}`).join(', ') : 'No Skills'}</td>
+          <td>${assignedText}</td>
           <td>
             <div style="display:grid;grid-template-columns: minmax(220px, 1fr) auto; gap: 12px; align-items:center;">
               <select data-user-id="${user.id}" class="skill-select-add" ${disabled}>
@@ -689,7 +737,7 @@
     function isValidProficiency(v) {
       const n = parseFloat(v);
       if (Number.isNaN(n)) return false;
-      return n >= 1 && n <= 5 && Math.abs(n*2 - Math.round(n*2)) < 1e-9; // must be multiple of 0.5
+      return n >= 1 && n <= 5 && Math.abs(n*2 - Math.round(n*2)) < 1e-9; // multiple of 0.5
     }
 
     function clampProficiency(v) {

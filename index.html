@@ -10,9 +10,9 @@
       --light-bg:#F8F9FA; --card-bg:#FFFFFF; --text-color:#2C3E50; --text-light:#6C757D;
       --pill:#e9f6f0;
     }
-    /* Aptos first, then sane fallbacks */
+    /* Aptos first, then fallbacks */
     body{
-      font-family: 'Aptos', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      font-family:'Aptos','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
       margin:20px;padding:20px;max-width:1400px;background:var(--light-bg);color:var(--text-color)
     }
     #logo-container{text-align:center;margin-bottom:20px} #logo{width:300px}
@@ -40,8 +40,9 @@
     .tab-content.active{display:block}
     .prof-wrap{display:flex;gap:8px;align-items:center;margin-top:6px}
     .prof-input,.prof-input-change{width:90px}
+    .muted{color:var(--text-light);font-size:12px}
 
-    /* Checkbox dropdown (Agents) */
+    /* Checkbox dropdown */
     .checkbox-dropdown{position:relative;min-width:260px}
     .cd-trigger{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-color);border-radius:6px;background:#fff;padding:10px;cursor:pointer}
     .cd-trigger .label{color:var(--text-color)}
@@ -57,7 +58,6 @@
     .cd-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f3f5}
     .cd-item label{display:flex;align-items:center;gap:10px;cursor:pointer;width:100%}
     .cd-footer{padding:8px 12px;background:#fafafa;border-top:1px solid var(--border-color);font-size:12px;color:var(--text-light);display:flex;justify-content:space-between}
-    .muted{color:var(--text-light);font-size:12px}
   </style>
 </head>
 <body>
@@ -85,27 +85,23 @@
         <h3>Search Options</h3>
         <div class="controls">
           <div>
-            <label for="agentDropdownRemove">Select Agents</label>
+            <label>Select Agents</label>
             <div id="agentDropdownRemove" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label for="skillDropdownRemove">Select Skill</label>
-            <select id="skillDropdownRemove">
-              <option value="">All Skills</option>
-            </select>
+            <label>Select Skills</label>
+            <div id="skillDropdownRemove" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label for="teamDropdownRemove">Select Work Team</label>
-            <select id="teamDropdownRemove">
-              <option value="">All Teams</option>
-            </select>
+            <label>Select Teams</label>
+            <div id="teamDropdownRemove" class="checkbox-dropdown"></div>
           </div>
           <div>
             <label>&nbsp;</label>
             <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="muted">Pick any combo. If you choose only a skill, I’ll find everyone who has it.</div>
+        <div class="muted">Pick any combo. If you only choose skills, I’ll scan everyone and show those who have them.</div>
       </div>
 
       <div class="card">
@@ -130,27 +126,23 @@
         <h3>Search Options</h3>
         <div class="controls">
           <div>
-            <label for="agentDropdownAdd">Select Agents</label>
+            <label>Select Agents</label>
             <div id="agentDropdownAdd" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label for="skillDropdownAdd">Select Skill</label>
-            <select id="skillDropdownAdd">
-              <option value="">All Skills</option>
-            </select>
+            <label>Select Skills</label>
+            <div id="skillDropdownAdd" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label for="teamDropdownAdd">Select Work Team</label>
-            <select id="teamDropdownAdd">
-              <option value="">All Teams</option>
-            </select>
+            <label>Select Teams</label>
+            <div id="teamDropdownAdd" class="checkbox-dropdown"></div>
           </div>
           <div>
             <label>&nbsp;</label>
             <button id="fetchUsersAdd" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="muted">Type or nudge proficiency in 0.5 steps (1–5).</div>
+        <div class="muted">Type or nudge proficiency in 0.5 steps (1–5). I’ll preselect a missing skill if you filtered by it.</div>
       </div>
 
       <div class="card">
@@ -175,27 +167,23 @@
         <h3>Search Options</h3>
         <div class="controls">
           <div>
-            <label for="agentDropdownChange">Select Agents</label>
+            <label>Select Agents</label>
             <div id="agentDropdownChange" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label for="skillDropdownChange">Filter by Skill (optional)</label>
-            <select id="skillDropdownChange">
-              <option value="">All Skills</option>
-            </select>
+            <label>Filter by Skills (optional)</label>
+            <div id="skillDropdownChange" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label for="teamDropdownChange">Select Work Team</label>
-            <select id="teamDropdownChange">
-              <option value="">All Teams</option>
-            </select>
+            <label>Select Teams</label>
+            <div id="teamDropdownChange" class="checkbox-dropdown"></div>
           </div>
           <div>
             <label>&nbsp;</label>
             <button id="fetchUsersChange" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="muted">Choose users, pick the skill per user, then tweak the number or nudge ±0.5.</div>
+        <div class="muted">Choose users, pick a skill per row, then tweak the number or nudge ±0.5.</div>
       </div>
 
       <div class="card">
@@ -226,9 +214,13 @@
     let availableUsers = [];
     let availableTeams = [];
     let availableSkills = [];
-    let agentDropdownRemoveDD = null;
-    let agentDropdownAddDD = null;
-    let agentDropdownChangeDD = null;
+
+    // Checkbox dropdown instances (per tab)
+    const dd = {
+      agent: { remove:null, add:null, change:null },
+      skill: { remove:null, add:null, change:null },
+      team:  { remove:null, add:null, change:null },
+    };
 
     // ===== OAUTH BOOT =====
     document.addEventListener('DOMContentLoaded', () => {
@@ -257,7 +249,7 @@
     async function initializeApp(){
       try {
         await Promise.all([fetchAllUsers(), fetchAllTeams(), fetchAllSkills()]);
-        createAgentDropdowns();
+        createAllDropdowns();
         populateDropdowns();
         setupEventListeners();
       } catch (e) {
@@ -302,8 +294,8 @@
       availableSkills = all;
     }
 
-    // ===== AGENT CHECKBOX DROPDOWN =====
-    function createCheckboxDropdown(containerId, { placeholder='Select agents', searchPlaceholder='Search agents...' } = {}){
+    // ===== GENERIC CHECKBOX DROPDOWN =====
+    function createCheckboxDropdown(containerId, { placeholder, searchPlaceholder }){
       const root = document.getElementById(containerId);
       root.innerHTML = '';
 
@@ -394,45 +386,47 @@
       return { setOptions, getSelectedValues };
     }
 
-    function createAgentDropdowns(){
-      agentDropdownRemoveDD = createCheckboxDropdown('agentDropdownRemove', { placeholder:'Select agents' });
-      agentDropdownAddDD    = createCheckboxDropdown('agentDropdownAdd',    { placeholder:'Select agents' });
-      agentDropdownChangeDD = createCheckboxDropdown('agentDropdownChange', { placeholder:'Select agents' });
+    function createAllDropdowns(){
+      // Agents
+      dd.agent.remove = createCheckboxDropdown('agentDropdownRemove', { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
+      dd.agent.add    = createCheckboxDropdown('agentDropdownAdd',    { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
+      dd.agent.change = createCheckboxDropdown('agentDropdownChange', { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
+      // Skills
+      dd.skill.remove = createCheckboxDropdown('skillDropdownRemove', { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
+      dd.skill.add    = createCheckboxDropdown('skillDropdownAdd',    { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
+      dd.skill.change = createCheckboxDropdown('skillDropdownChange', { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
+      // Teams
+      dd.team.remove  = createCheckboxDropdown('teamDropdownRemove',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
+      dd.team.add     = createCheckboxDropdown('teamDropdownAdd',     { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
+      dd.team.change  = createCheckboxDropdown('teamDropdownChange',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
     }
 
     // ===== POPULATE =====
     function populateDropdowns(){
-      // agents -> checkbox dropdowns
-      const valid = availableUsers
+      // Agents
+      const validAgents = availableUsers
         .filter(u => u.name && u.name.trim() && u.name !== 'Unknown User')
         .map(u => ({ value: u.id, label: u.name || u.email || 'Unknown User' }))
         .sort((a,b)=>a.label.localeCompare(b.label));
+      dd.agent.remove.setOptions(validAgents);
+      dd.agent.add.setOptions(validAgents);
+      dd.agent.change.setOptions(validAgents);
 
-      agentDropdownRemoveDD.setOptions(valid);
-      agentDropdownAddDD.setOptions(valid);
-      agentDropdownChangeDD.setOptions(valid);
+      // Skills
+      const skillOpts = (availableSkills||[])
+        .map(s => ({ value: s.id, label: s.name }))
+        .sort((a,b)=>a.label.localeCompare(b.label));
+      dd.skill.remove.setOptions(skillOpts);
+      dd.skill.add.setOptions(skillOpts);
+      dd.skill.change.setOptions(skillOpts);
 
-      // skills
-      ['Remove','Add','Change'].forEach(suf => {
-        const el = document.getElementById(`skillDropdown${suf}`);
-        el.innerHTML = '<option value="">All Skills</option>';
-        availableSkills.forEach(s=>{
-          const opt = document.createElement('option');
-          opt.value = s.id; opt.textContent = s.name;
-          el.appendChild(opt);
-        });
-      });
-
-      // teams
-      ['Remove','Add','Change'].forEach(suf => {
-        const el = document.getElementById(`teamDropdown${suf}`);
-        el.innerHTML = '<option value="">All Teams</option>';
-        availableTeams.forEach(t=>{
-          const opt = document.createElement('option');
-          opt.value = t.id; opt.textContent = t.name;
-          el.appendChild(opt);
-        });
-      });
+      // Teams
+      const teamOpts = (availableTeams||[])
+        .map(t => ({ value: t.id, label: t.name }))
+        .sort((a,b)=>a.label.localeCompare(b.label));
+      dd.team.remove.setOptions(teamOpts);
+      dd.team.add.setOptions(teamOpts);
+      dd.team.change.setOptions(teamOpts);
     }
 
     // ===== EVENTS =====
@@ -464,23 +458,21 @@
       });
 
       document.getElementById('removeSkills').addEventListener('click', ()=> removeSelectedSkills());
-      document.getElementById('addSkills').addEventListener('click', ()=> addSelectedSkills());
+      document.getElementById('addSkills').addEventListener('click',    ()=> addSelectedSkills());
       document.getElementById('updateProficiency').addEventListener('click', ()=> updateSelectedProficiency());
     }
 
-    function getSelectedAgentIds(mode){
-      if (mode==='remove') return agentDropdownRemoveDD.getSelectedValues();
-      if (mode==='add')    return agentDropdownAddDD.getSelectedValues();
-      return agentDropdownChangeDD.getSelectedValues();
-    }
+    function getSelectedAgentIds(mode){ return dd.agent[mode].getSelectedValues(); }
+    function getSelectedSkillIds(mode){ return dd.skill[mode].getSelectedValues(); }
+    function getSelectedTeamIds(mode){  return dd.team[mode].getSelectedValues();  }
 
     // ===== FETCH USERS + SKILLS =====
     async function fetchUsers(mode){
       const agentIds = getSelectedAgentIds(mode);
-      const teamId   = document.getElementById(`teamDropdown${cap(mode)}`).value;
-      const skillId  = document.getElementById(`skillDropdown${cap(mode)}`).value;
+      const teamIds  = getSelectedTeamIds(mode);
+      const skillIds = getSelectedSkillIds(mode);
 
-      if (agentIds.length === 0 && !teamId && !skillId){
+      if (agentIds.length === 0 && teamIds.length === 0 && skillIds.length === 0){
         showMessage('Please select at least one search option.');
         return;
       }
@@ -488,13 +480,19 @@
       const tbody = document.querySelector(`#userSkillsTable${cap(mode)} tbody`);
       tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading users...</td></tr>';
 
+      // Build candidate users
       let users = [];
+      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
+
       if (agentIds.length){
-        users = agentIds.map(id => availableUsers.find(u=>u.id===id)).filter(Boolean);
-      } else if (teamId){
-        users = await usersFromTeam(teamId);
-      } else if (skillId){
-        users = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
+        users = agentIds.map(id => validUsers.find(u=>u.id===id)).filter(Boolean);
+      } else if (teamIds.length){
+        const teamMembersArrays = await Promise.all(teamIds.map(tid => usersFromTeam(tid)));
+        const map = new Map();
+        teamMembersArrays.flat().forEach(u => map.set(u.id, u));
+        users = Array.from(map.values());
+      } else if (skillIds.length){
+        users = validUsers; // we’ll filter after fetching their skills
       }
 
       if (!users.length){ showMessage('No users found for the selected criteria.'); return; }
@@ -504,16 +502,24 @@
         return { user, skills };
       }));
 
-      let filtered = usersWithSkills;
-      if (skillId){
-        const hasSkill = (skills)=>skills.some(s=>s.id===skillId);
-        if (mode==='remove' || mode==='change') filtered = usersWithSkills.filter(({skills})=>hasSkill(skills));
-        if (mode==='add') filtered = usersWithSkills.filter(({skills})=>!hasSkill(skills));
+      // Filter by selected skills:
+      if (skillIds.length){
+        const hasAny = (skills)=> skills.some(s => skillIds.includes(s.id));
+        const hasAll = (skills)=> skillIds.every(id => skills.some(s=>s.id===id));
+        if (mode==='remove' || mode==='change'){
+          // Keep users who have ANY of the selected skills
+          filtered = usersWithSkills.filter(({skills})=> hasAny(skills));
+        } else {
+          // add: keep users who are missing AT LEAST one selected skill
+          filtered = usersWithSkills.filter(({skills})=> !hasAll(skills));
+        }
+      } else {
+        filtered = usersWithSkills;
       }
 
       if (mode==='remove') populateRemoveTable(filtered);
-      else if (mode==='add') populateAddTable(filtered, skillId);
-      else populateChangeTable(filtered, skillId);
+      else if (mode==='add') populateAddTable(filtered, skillIds);
+      else populateChangeTable(filtered, skillIds);
     }
 
     async function usersFromTeam(teamId){
@@ -521,9 +527,8 @@
       if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch team ${teamId} members`);
       const data = await res.json();
       const members = data.entities || [];
-      return members
-        .map(m=> availableUsers.find(u=>u.id===m.id))
-        .filter(u=> u && u.name && u.name.trim() && u.name!=='Unknown User');
+      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
+      return members.map(m => validUsers.find(u=>u.id===m.id)).filter(Boolean);
     }
 
     async function fetchUserSkills(userId){
@@ -576,7 +581,7 @@
       updateRemoveButtonState();
     }
 
-    function populateAddTable(rows, preselectSkillId=''){
+    function populateAddTable(rows, selectedSkillIds=[]){
       const tbody = document.querySelector('#userSkillsTableAdd tbody');
       tbody.innerHTML='';
       if (!rows.length){ tbody.innerHTML='<tr><td colspan="4">No users found.</td></tr>'; updateAddButtonState(); return; }
@@ -584,8 +589,11 @@
       rows.forEach(({user, skills})=>{
         const assignedIds = skills.map(s=>s.id);
         const choices = availableSkills.filter(s => !assignedIds.includes(s.id));
+        // Preselect the first selected-skill that user doesn't have, else blank
+        const preselect = selectedSkillIds.find(id => choices.some(c=>c.id===id)) || '';
+
         const options = choices.length
-          ? ['<option value="">Select Skill to Add</option>', ...choices.map(s=> `<option value="${s.id}" ${s.id===preselectSkillId?'selected':''}>${s.name}</option>`)].join('')
+          ? ['<option value="">Select Skill to Add</option>', ...choices.map(s=> `<option value="${s.id}" ${s.id===preselect?'selected':''}>${s.name}</option>`)].join('')
           : '<option value="">All Skills Assigned</option>';
 
         const assignedText = skills.length
@@ -628,7 +636,7 @@
       updateAddButtonState();
     }
 
-    function populateChangeTable(rows, preselectedSkillId=''){
+    function populateChangeTable(rows, selectedSkillIds=[]){
       const tbody = document.querySelector('#userSkillsTableChange tbody');
       tbody.innerHTML='';
       if (!rows.length){ tbody.innerHTML='<tr><td colspan="4">No users found.</td></tr>'; updateChangeButtonState(); return; }
@@ -638,17 +646,18 @@
           ? skills.map(s=> `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}`).join(', ')
           : 'No Skills';
 
+        // Default selection: first of selectedSkillIds that the user has; else first skill
+        let selectedSkill = skills[0] || null;
+        if (selectedSkillIds.length){
+          const match = skills.find(s => selectedSkillIds.includes(s.id));
+          if (match) selectedSkill = match;
+        }
+        const initialProf = selectedSkill && typeof selectedSkill.proficiency==='number' ? selectedSkill.proficiency : 3.0;
+
         const options = skills.map(s=> `
-          <option value="${s.id}" data-prof="${s.proficiency!=null?s.proficiency:''}" ${preselectedSkillId && preselectedSkillId===s.id?'selected':''}>
+          <option value="${s.id}" data-prof="${s.proficiency!=null?s.proficiency:''}" ${selectedSkill && selectedSkill.id===s.id?'selected':''}>
             ${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}
           </option>`).join('');
-
-        // default input value = selected skill’s current prof (or 3.0)
-        let initial = 3.0;
-        if (skills.length){
-          const sel = preselectedSkillId ? skills.find(s=>s.id===preselectedSkillId) : skills[0];
-          if (sel && typeof sel.proficiency==='number') initial = sel.proficiency;
-        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -662,7 +671,7 @@
                      <select data-user-id="${user.id}" class="skill-select-change">${options}</select>
                      <div class="prof-wrap">
                        <button type="button" class="tiny-btn" data-act="dec-change" data-user-id="${user.id}">−</button>
-                       <input type="number" step="0.5" min="1" max="5" value="${initial.toFixed(1)}" class="prof-input-change" data-user-id="${user.id}"/>
+                       <input type="number" step="0.5" min="1" max="5" value="${initialProf.toFixed(1)}" class="prof-input-change" data-user-id="${user.id}"/>
                        <button type="button" class="tiny-btn" data-act="inc-change" data-user-id="${user.id}">+</button>
                      </div>
                    </div>`

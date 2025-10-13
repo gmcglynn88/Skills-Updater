@@ -1,564 +1,708 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPI Skills On The Fly</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;700&display=swap">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IPI Skill Updates</title>
   <style>
-    /* === CSS Styles === */
-    body {
-      font-family: 'Proxima Nova', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f0f0;
+    :root{
+      --primary-color:#63AB8F; --secondary-color:#4A8C7D; --border-color:#DEE2E6;
+      --light-bg:#F8F9FA; --card-bg:#FFFFFF; --text-color:#2C3E50; --text-light:#6C757D;
+      --pill:#e9f6f0;
     }
+    body{font-family:'Segoe UI',Arial,sans-serif;margin:20px;padding:20px;max-width:1400px;background:var(--light-bg);color:var(--text-color)}
+    #logo-container{text-align:center;margin-bottom:20px} #logo{width:300px}
+    h1{margin:0 0 16px}
+    .card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+    label{display:block;font-weight:600;margin-bottom:6px}
+    select,input,button{padding:10px;border:1px solid var(--border-color);border-radius:6px;background:var(--card-bg);font-size:14px}
+    button{background:var(--primary-color);color:#fff;font-weight:600;cursor:pointer;transition:background .2s}
+    button:hover{background:var(--secondary-color)} button:disabled{background:var(--text-light);cursor:not-allowed}
+    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;align-items:end}
+    .inline{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center} .inline span{color:var(--text-light)}
+    .full-width-btn{width:100%;padding:14px 18px;font-size:16px;margin-top:12px}
+    .muted{color:var(--text-light)} .mono{font-family:ui-monospace,Consolas,Menlo,monospace}
+    .loading{opacity:.6;pointer-events:none}
+    .selection-section {margin-bottom: 20px;padding: 15px;border: 1px solid var(--border-color);border-radius: 8px;background-color: var(--light-bg);}
+    .selection-section h3 {margin-top: 0;color: var(--primary-color);}
+    .multi-select {width: 100%;max-width: 400px;}
+    .action-button {margin-top: 20px;}
+    table {width: 100%;border-collapse: collapse;margin-top: 20px;}
+    th, td {border: 1px solid var(--border-color);padding: 10px;text-align: left;vertical-align: middle;}
+    th {background-color: var(--primary-color);color: white;}
+    .select-all-checkbox {margin-bottom: 10px;}
+    .error-message {color: #d9534f;padding: 10px;margin: 10px 0;border: 1px solid #d9534f;border-radius: 4px;background-color: #f9f2f2;}
+    .success-message {color: #3c763d;padding: 10px;margin: 10px 0;border: 1px solid #3c763d;border-radius: 4px;background-color: #dff0d8;}
+    .tab-container {display: flex;margin-bottom: 20px;border-bottom: 1px solid var(--border-color);}
+    .tab {padding: 12px 24px;cursor: pointer;border: 1px solid var(--border-color);border-bottom: none;border-radius: 8px 8px 0 0;margin-right: 4px;background: var(--light-bg);transition: background 0.2s;}
+    .tab.active {background: var(--primary-color);color: white;border-color: var(--primary-color);}
+    .tab-content {display: none;}
+    .tab-content.active {display: block;}
+    .pill{display:inline-block;background:var(--pill);border:1px solid var(--border-color);border-radius:999px;padding:2px 8px;font-size:12px;margin-right:6px}
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background-color: #63AB8F; /* Custom Teal */
-      color: white;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 24px;
-    }
-
-    .logo-button {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-    }
-
-    .logo-button img {
-      height: 50px;
-      background-color: transparent;
-    }
-
-    .divider {
-      border: none;
-      height: 1px;
-      background-color: #ddd;
-      margin: 0;
-    }
-
-    .container {
-      padding: 20px;
-      background-color: white;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      margin: 20px;
-      max-width: 1200px;
-      margin: 20px auto;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .tab-button {
-      padding: 10px 20px;
-      background-color: #63AB8F;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .tab-button.active {
-      background-color: #4d8c73; /* Darker Teal */
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    label, select, input, button {
-      display: block;
-      margin: 10px 0;
-    }
-
-    label {
-      font-weight: bold;
-    }
-
-    select, input, button {
-      margin-top: 10px;
-      padding: 12px;
-      width: 100%;
-      max-width: 400px;
-      font-size: 16px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-    }
-
-    button {
-      background-color: #63AB8F; /* Custom Teal */
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #4d8c73; /* Darker Teal */
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #63AB8F; /* Custom Teal */
-      color: white;
-    }
-
-    td input[type="number"] {
-      width: 100px;
-      padding: 5px;
-      text-align: center;
-      box-sizing: border-box;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-    }
-
-    .select-all-checkbox {
-      margin-bottom: 10px;
-    }
+    .prof-input-wrap{display:flex;gap:8px;align-items:center}
+    .prof-input{width:80px}
+    .tiny-btn{padding:8px 10px;font-size:14px;line-height:1}
+    .note{font-size:12px;color:var(--text-light)}
   </style>
 </head>
 <body>
-  <header>
-    <h1>IPI Skills On The Fly</h1>
-    <button class="logo-button" id="refreshButton">
-      <img src="https://raw.githubusercontent.com/gmcglynn88/TimeoffApp/main/IPI_Primary%20Identity_Corporate_REVERSED_ECC.png" alt="Consulting Logo">
-    </button>
-  </header>
-  <div class="divider"></div>
+  <div id="logo-container">
+    <img id="logo" src="https://raw.githubusercontent.com/gmcglynn88/ExternalWorkCreation/main/Consultinglogo.png" alt="Company Logo">
+  </div>
+  <h1>Skill Management Tool</h1>
 
-  <div class="container">
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab-button active" data-tab="skill-tab">Skill Assignment</button>
-      <button class="tab-button" data-tab="queue-tab">Queue Assignment</button>
+  <div id="loginSection" class="card" style="text-align: center; margin: 20px;">
+    <div class="loading">Authenticating with PureCloud...</div>
+  </div>
+
+  <div id="appContent" style="display: none;">
+    <div id="messageContainer" style="display: none;"></div>
+
+    <div class="tab-container">
+      <div class="tab active" data-tab="remove">Remove Skills</div>
+      <div class="tab" data-tab="add">Add Skills</div>
     </div>
 
-    <!-- Skill Assignment Tab -->
-    <div id="skill-tab" class="tab-content active">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <label for="skillDropdown">Select Skill:</label>
-        <select id="skillDropdown"></select>
-        <label for="agentDropdownForSkill">Or Select Agent:</label>
-        <select id="agentDropdownForSkill"></select>
-        <label for="managementUnitDropdownForSkill">Or Select Management Unit:</label>
-        <select id="managementUnitDropdownForSkill"></select>
+    <!-- Remove Skills Tab -->
+    <div id="removeTab" class="tab-content active">
+      <div class="selection-section">
+        <h3>Search Options</h3>
+        <div class="controls">
+          <div>
+            <label for="agentDropdownRemove">Select Agents</label>
+            <select id="agentDropdownRemove" multiple class="multi-select">
+              <option value="">Loading agents...</option>
+            </select>
+          </div>
+          <div>
+            <label for="skillDropdownRemove">Select Skill</label>
+            <select id="skillDropdownRemove">
+              <option value="">Select Skill</option>
+            </select>
+          </div>
+          <div>
+            <label for="teamDropdownRemove">Select Work Team</label>
+            <select id="teamDropdownRemove">
+              <option value="">Select Team</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
+          </div>
+        </div>
+        <div class="note">Tip: Choosing only a Skill will scan users to show just those who currently have it.</div>
       </div>
 
-      <button id="fetchAgentsForSkill">Get Agents</button>
+      <div class="card">
+        <h2 style="margin: 0 0 12px;">Routing Skills - Remove</h2>
+        <table id="userSkillsTableRemove">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllUsersRemove" class="select-all-checkbox"></th>
+              <th>Agent</th>
+              <th>Skills Assigned</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
 
-      <table id="agentsTableForSkill">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAllAgentsForSkill" class="select-all-checkbox"></th>
-            <th>Agent</th>
-            <th>Current Skills</th>
-            <th>Skill Change</th>
-            <th>Proficiency</th>
-            <th>Delete Skill</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <button id="updateSkills">Update Selected Skills</button>
+        <button id="removeSkills" class="full-width-btn action-button" disabled>Remove Selected Skills from Selected Users</button>
+      </div>
     </div>
 
-    <!-- Queue Assignment Tab -->
-    <div id="queue-tab" class="tab-content">
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <label for="queueDropdown">Select Queue:</label>
-        <select id="queueDropdown"></select>
-        <label for="agentDropdownForQueue">Or Select Agent:</label>
-        <select id="agentDropdownForQueue"></select>
-        <label for="managementUnitDropdownForQueue">Or Select Management Unit:</label>
-        <select id="managementUnitDropdownForQueue"></select>
+    <!-- Add Skills Tab -->
+    <div id="addTab" class="tab-content">
+      <div class="selection-section">
+        <h3>Search Options</h3>
+        <div class="controls">
+          <div>
+            <label for="agentDropdownAdd">Select Agents</label>
+            <select id="agentDropdownAdd" multiple class="multi-select">
+              <option value="">Loading agents...</option>
+            </select>
+          </div>
+          <div>
+            <label for="skillDropdownAdd">Select Skill</label>
+            <select id="skillDropdownAdd">
+              <option value="">Select Skill</option>
+            </select>
+          </div>
+          <div>
+            <label for="teamDropdownAdd">Select Work Team</label>
+            <select id="teamDropdownAdd">
+              <option value="">Select Team</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="fetchUsersAdd" class="full-width-btn">Get Users</button>
+          </div>
+        </div>
+        <div class="note">Proficiency can be typed or nudged in ±0.5 steps (min 1, max 5).</div>
       </div>
 
-      <button id="fetchAgentsForQueue">Get Agents</button>
+      <div class="card">
+        <h2 style="margin: 0 0 12px;">Routing Skills - Add</h2>
+        <table id="userSkillsTableAdd">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllUsersAdd" class="select-all-checkbox"></th>
+              <th>Agent</th>
+              <th>Skills Assigned</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
 
-      <table id="agentsTableForQueue">
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAllAgentsForQueue" class="select-all-checkbox"></th>
-            <th>Agent</th>
-            <th>Current Queues</th>
-            <th>Queue Change</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <button id="updateQueues">Update Selected Queues</button>
+        <button id="addSkills" class="full-width-btn action-button" disabled>Add Selected Skills to Selected Users</button>
+      </div>
     </div>
   </div>
 
   <script>
-    const clientId = '9158a5a9-9572-4766-a392-343bc7e51734'; // Replace with your actual client ID
-    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // Replace with your redirect URI
+    // ======== CONFIG ========
+    const clientId = 'd4529142-7340-4cd8-a9f9-f3a4d25670df';
+    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/'; // <- updated
     const responseType = 'token';
     const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
+    // ======== STATE ========
+    let token = null;
+    let availableUsers = [];
+    let availableTeams = [];
     let availableSkills = [];
-    let availableQueues = [];
-    let availableAgents = [];
-    let availableManagementUnits = [];
 
+    // ======== BOOT ========
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
       const params = new URLSearchParams(hash);
-      const token = params.get('access_token');
+      token = params.get('access_token');
 
-      if (!token) {
-        window.location.href = oauthUrl;
-      } else {
-        console.log("Token retrieved:", token); // Debugging log
+      if (token) {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
         initializeApp(token);
+      } else {
+        window.location.href = oauthUrl;
       }
     });
 
+    function showMessage(message, type = 'error') {
+      const messageContainer = document.getElementById('messageContainer');
+      messageContainer.innerHTML = `<div class="${type}-message">${message}</div>`;
+      messageContainer.style.display = 'block';
+      if (type === 'success') setTimeout(() => messageContainer.style.display = 'none', 5000);
+    }
+
+    // ======== INIT ========
     async function initializeApp(token) {
-      console.log("Initializing app...");
-      await fetchQueues(token);
-      await fetchAllSkills(token); // Fetch all skills
-      await fetchAllAgents(token); // Fetch all agents
-      await fetchManagementUnits(token); // Fetch management units
-      populateSkillDropdown();
-      populateQueueDropdown();
-      populateAgentDropdowns();
-      populateManagementUnitDropdowns();
-      setupTabs();
-      setupEventListeners(token);
-    }
-
-    async function fetchQueues(token) {
-      const url = 'https://api.mypurecloud.ie/api/v2/routing/queues';
       try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        console.log("Queues API Response:", data); // Debugging log
-        availableQueues = data.entities || [];
+        await Promise.all([
+          fetchAllUsers(token),
+          fetchAllTeams(token),
+          fetchAllSkills(token)
+        ]);
+        populateDropdowns();
+        setupEventListeners(token);
       } catch (error) {
-        console.error("Error fetching queues:", error);
+        console.error("Initialization error:", error);
+        showMessage("Error initializing application. Please try again.");
+        setTimeout(() => window.location.href = oauthUrl, 3000);
       }
     }
 
-    async function fetchAllSkills(token) {
-      const url = 'https://api.mypurecloud.ie/api/v2/routing/skills';
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        console.log("Skills API Response:", data); // Debugging log
-        availableSkills = data.entities || [];
-      } catch (error) {
-        console.error("Error fetching skills:", error);
-      }
+    // ======== DATA FETCHING ========
+    async function fetchAllUsers() {
+      let all = [], pageNumber = 1, pageSize = 100, total = 0;
+      do {
+        const url = `https://api.mypurecloud.ie/api/v2/users?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await res.json()).message || "Failed to fetch users");
+        const data = await res.json();
+        all = all.concat(data.entities || []);
+        total = data.total || 0;
+        pageNumber++;
+      } while (all.length < total);
+      availableUsers = all;
     }
 
-    async function fetchAllAgents(token) {
-      const url = 'https://api.mypurecloud.ie/api/v2/users';
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        console.log("Agents API Response:", data); // Debugging log
-        availableAgents = data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agents:", error);
-      }
+    async function fetchAllTeams() {
+      let all = [], pageNumber = 1, pageSize = 100, total = 0;
+      do {
+        const url = `https://api.mypurecloud.ie/api/v2/teams?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await res.json()).message || "Failed to fetch teams");
+        const data = await res.json();
+        all = all.concat(data.entities || []);
+        total = data.total || 0;
+        pageNumber++;
+      } while (all.length < total);
+      availableTeams = all;
     }
 
-    async function fetchManagementUnits(token) {
-      const url = 'https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits';
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        console.log("Management Units API Response:", data); // Debugging log
-        availableManagementUnits = data.entities || [];
-      } catch (error) {
-        console.error("Error fetching management units:", error);
-      }
+    async function fetchAllSkills() {
+      let all = [], pageNumber = 1, pageSize = 100, total = 0;
+      do {
+        const url = `https://api.mypurecloud.ie/api/v2/routing/skills?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await res.json()).message || "Failed to fetch skills");
+        const data = await res.json();
+        all = all.concat(data.entities || []);
+        total = data.total || 0;
+        pageNumber++;
+      } while (all.length < total);
+      availableSkills = all;
     }
 
-    async function fetchAgentsByManagementUnit(unitId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits/${unitId}/users`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        console.log("Agents by Management Unit API Response:", data); // Debugging log
-
-        // Ensure the agent name is correctly extracted
-        return data.entities.map(agent => ({
-          id: agent.id,
-          name: agent.name || 'N/A' // Fallback to 'N/A' if name is missing
-        }));
-      } catch (error) {
-        console.error("Error fetching agents by management unit:", error);
-        return [];
-      }
+    function authHeaders() {
+      return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
     }
 
-    async function fetchAgentSkills(agentId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingskills`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agent skills:", error);
-        return [];
-      }
+    // ======== DROPDOWNS ========
+    function populateDropdowns() {
+      // Remove tab
+      populateAgentDropdown('agentDropdownRemove');
+      populateSkillDropdown('skillDropdownRemove');
+      populateTeamDropdown('teamDropdownRemove');
+      // Add tab
+      populateAgentDropdown('agentDropdownAdd');
+      populateSkillDropdown('skillDropdownAdd');
+      populateTeamDropdown('teamDropdownAdd');
     }
 
-    async function fetchAgentQueues(agentId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/users/${agentId}/routingqueues`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agent queues:", error);
-        return [];
-      }
-    }
-
-    function populateSkillDropdown() {
-      const skillDropdown = document.getElementById('skillDropdown');
-      skillDropdown.innerHTML = '<option value="">Select Skill</option>';
-      availableSkills.forEach(skill => {
-        const option = document.createElement('option');
-        option.value = skill.id;
-        option.textContent = skill.name;
-        skillDropdown.appendChild(option);
+    function populateAgentDropdown(id) {
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      const valid = availableUsers.filter(u => u.name && u.name.trim() !== '' && u.name !== 'Unknown User');
+      valid.forEach(user => {
+        const opt = document.createElement('option');
+        opt.value = user.id;
+        opt.textContent = user.name || user.email || 'Unknown User';
+        el.appendChild(opt);
       });
     }
 
-    function populateQueueDropdown() {
-      const queueDropdown = document.getElementById('queueDropdown');
-      queueDropdown.innerHTML = '<option value="">Select Queue</option>';
-      availableQueues.forEach(queue => {
-        const option = document.createElement('option');
-        option.value = queue.id;
-        option.textContent = queue.name;
-        queueDropdown.appendChild(option);
+    function populateSkillDropdown(id) {
+      const el = document.getElementById(id);
+      el.innerHTML = '<option value="">Select Skill</option>';
+      availableSkills.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        el.appendChild(opt);
       });
     }
 
-    function populateAgentDropdowns() {
-      const agentDropdownForSkill = document.getElementById('agentDropdownForSkill');
-      const agentDropdownForQueue = document.getElementById('agentDropdownForQueue');
-      
-      agentDropdownForSkill.innerHTML = '<option value="">Select Agent</option>';
-      agentDropdownForQueue.innerHTML = '<option value="">Select Agent</option>';
-      
-      availableAgents.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.id;
-        option.textContent = agent.name;
-        agentDropdownForSkill.appendChild(option);
-        agentDropdownForQueue.appendChild(option.cloneNode(true));
+    function populateTeamDropdown(id) {
+      const el = document.getElementById(id);
+      el.innerHTML = '<option value="">Select Team</option>';
+      availableTeams.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name;
+        el.appendChild(opt);
       });
     }
 
-    function populateManagementUnitDropdowns() {
-      const skillDropdown = document.getElementById('managementUnitDropdownForSkill');
-      const queueDropdown = document.getElementById('managementUnitDropdownForQueue');
-      
-      skillDropdown.innerHTML = '<option value="">Select Management Unit</option>';
-      queueDropdown.innerHTML = '<option value="">Select Management Unit</option>';
-      
-      availableManagementUnits.forEach(unit => {
-        const option = document.createElement('option');
-        option.value = unit.id;
-        option.textContent = unit.name;
-        skillDropdown.appendChild(option);
-        queueDropdown.appendChild(option.cloneNode(true));
-      });
-    }
-
-    function setupTabs() {
-      const tabButtons = document.querySelectorAll('.tab-button');
-      const tabContents = document.querySelectorAll('.tab-content');
-
-      tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          // Remove active class from all buttons and contents
-          tabButtons.forEach(btn => btn.classList.remove('active'));
-          tabContents.forEach(content => content.classList.remove('active'));
-
-          // Add active class to the clicked button and corresponding content
-          const tabId = button.getAttribute('data-tab');
-          button.classList.add('active');
-          document.getElementById(tabId).classList.add('active');
+    // ======== EVENTS ========
+    function setupEventListeners() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
         });
       });
+
+      // Remove tab
+      document.getElementById('fetchUsersRemove').addEventListener('click', () => fetchUsers('remove'));
+      document.getElementById('removeSkills').addEventListener('click', () => removeSelectedSkills());
+      document.getElementById('selectAllUsersRemove').addEventListener('change', function() {
+        document.querySelectorAll('#userSkillsTableRemove tbody input[type="checkbox"]').forEach(cb => cb.checked = this.checked);
+        updateRemoveButtonState();
+      });
+
+      // Add tab
+      document.getElementById('fetchUsersAdd').addEventListener('click', () => fetchUsers('add'));
+      document.getElementById('addSkills').addEventListener('click', () => addSelectedSkills());
+      document.getElementById('selectAllUsersAdd').addEventListener('change', function() {
+        document.querySelectorAll('#userSkillsTableAdd tbody input[type="checkbox"]').forEach(cb => cb.checked = this.checked);
+        updateAddButtonState();
+      });
     }
 
-    function setupEventListeners(token) {
-      document.getElementById('fetchAgentsForSkill').addEventListener('click', () => fetchAgentsForSkill(token));
-      document.getElementById('fetchAgentsForQueue').addEventListener('click', () => fetchAgentsForQueue(token));
-    }
+    // ======== USER GATHERING & TABLE POP ========
+    async function fetchUsers(mode) {
+      const agentSelId = `agentDropdown${cap(mode)}`;
+      const skillSelId = `skillDropdown${cap(mode)}`;
+      const teamSelId  = `teamDropdown${cap(mode)}`;
 
-    async function fetchAgentsForSkill(token) {
-      const skillId = document.getElementById('skillDropdown').value;
-      const agentId = document.getElementById('agentDropdownForSkill').value;
-      const managementUnitId = document.getElementById('managementUnitDropdownForSkill').value;
+      const agentIds = Array.from(document.getElementById(agentSelId).selectedOptions).map(o => o.value);
+      const skillId  = document.getElementById(skillSelId).value;
+      const teamId   = document.getElementById(teamSelId).value;
 
-      if (!skillId && !agentId && !managementUnitId) {
-        alert('Please select a skill, agent, or management unit first.');
+      if (agentIds.length === 0 && !skillId && !teamId) {
+        showMessage('Please select at least one search option.');
         return;
       }
 
-      let agents = [];
-      if (skillId) {
-        agents = await fetchAgentsBySkill(skillId, token);
-      } else if (agentId) {
-        // If an agent is selected, return only that agent
-        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
-        agents = selectedAgent ? [selectedAgent] : [];
-      } else if (managementUnitId) {
-        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
+      try {
+        const tableBody = document.querySelector(`#userSkillsTable${cap(mode)} tbody`);
+        tableBody.innerHTML = '<tr><td colspan="4" class="loading">Loading users...</td></tr>';
+
+        let users = [];
+
+        if (agentIds.length > 0) {
+          users = agentIds.map(id => availableUsers.find(u => u.id === id)).filter(Boolean);
+        } else if (teamId) {
+          const teamMembers = await fetchTeamMembers(teamId);
+          users = await processTeamMembers(teamMembers);
+        } else if (skillId) {
+          users = availableUsers.filter(u => u.name && u.name.trim() && u.name !== 'Unknown User');
+        }
+
+        if (users.length === 0) {
+          showMessage('No users found for the selected criteria.');
+          return;
+        }
+
+        // Fetch skills per user (batched to be gentle on rate limits)
+        const usersWithSkills = await fetchSkillsForUsersBatched(users, 10);
+
+        // Filter rows based on skill filter (if given)
+        let filtered = usersWithSkills;
+        if (skillId) {
+          if (mode === 'remove') filtered = usersWithSkills.filter(({ skills }) => skills.some(s => s.id === skillId));
+          else filtered = usersWithSkills.filter(({ skills }) => !skills.some(s => s.id === skillId));
+        }
+
+        if (mode === 'remove') populateRemoveTable(filtered);
+        else populateAddTable(filtered, skillId);
+
+      } catch (e) {
+        console.error("Error fetching users:", e);
+        showMessage(`Failed to fetch users: ${e.message}`);
       }
-
-      // Fetch skills for each agent
-      const agentsWithSkills = await Promise.all(agents.map(async agent => {
-        const skills = await fetchAgentSkills(agent.id, token);
-        return { ...agent, skills }; // Ensure the agent object includes the name and skills
-      }));
-
-      console.log("Agents with skills:", agentsWithSkills); // Debugging log
-      populateTable(agentsWithSkills, 'skill');
     }
 
-    async function fetchAgentsForQueue(token) {
-      const queueId = document.getElementById('queueDropdown').value;
-      const agentId = document.getElementById('agentDropdownForQueue').value;
-      const managementUnitId = document.getElementById('managementUnitDropdownForQueue').value;
+    async function fetchTeamMembers(teamId) {
+      const url = `https://api.mypurecloud.ie/api/v2/teams/${teamId}/members`;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json()).message || `Failed to fetch members for team ${teamId}`);
+      const data = await res.json();
+      return data.entities || [];
+    }
 
-      if (!queueId && !agentId && !managementUnitId) {
-        alert('Please select a queue, agent, or management unit first.');
+    async function processTeamMembers(teamMembers) {
+      const users = [];
+      for (const member of teamMembers) {
+        const userId = member.id;
+        if (!userId) continue;
+        const user = availableUsers.find(u => u.id === userId);
+        if (user && user.name && user.name.trim() !== '' && user.name !== 'Unknown User') users.push(user);
+      }
+      return users;
+    }
+
+    async function fetchUserSkillsForUser(userId) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
+      try {
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) {
+          if (res.status === 404) return [];
+          throw new Error((await res.json()).message || `Failed to fetch skills for user ${userId}`);
+        }
+        const data = await res.json();
+        return (data || []).map(s => ({
+          id: s.id,
+          name: s.name || (availableSkills.find(as => as.id === s.id)?.name) || 'Unknown Skill',
+          proficiency: typeof s.proficiency === 'number' ? s.proficiency : null
+        }));
+      } catch (e) {
+        console.error(`Error fetching skills for user ${userId}:`, e);
+        return [];
+      }
+    }
+
+    async function fetchSkillsForUsersBatched(users, batchSize=10) {
+      const result = [];
+      for (let i = 0; i < users.length; i += batchSize) {
+        const chunk = users.slice(i, i + batchSize);
+        const data = await Promise.all(chunk.map(async (user) => {
+          const skills = await fetchUserSkillsForUser(user.id);
+          return { user, skills };
+        }));
+        result.push(...data);
+      }
+      return result;
+    }
+
+    function populateRemoveTable(usersWithSkills) {
+      const tbody = document.querySelector('#userSkillsTableRemove tbody');
+      tbody.innerHTML = "";
+
+      if (!usersWithSkills.length) {
+        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
+        updateRemoveButtonState();
         return;
       }
 
-      let agents = [];
-      if (queueId) {
-        agents = await fetchAgentsByQueue(queueId, token);
-      } else if (agentId) {
-        // If an agent is selected, return only that agent
-        const selectedAgent = availableAgents.find(agent => agent.id === agentId);
-        agents = selectedAgent ? [selectedAgent] : [];
-      } else if (managementUnitId) {
-        agents = await fetchAgentsByManagementUnit(managementUnitId, token);
-      }
+      usersWithSkills.forEach(({ user, skills }) => {
+        const row = document.createElement("tr");
+        const skillOptions = skills.length
+          ? ['<option value="">Select Skill to Remove</option>', ...skills.map(s => `<option value="${s.id}">${s.name}${formatProf(s.proficiency)}</option>`)].join('')
+          : '<option value="">No Skills Assigned</option>';
 
-      // Fetch queues for each agent
-      const agentsWithQueues = await Promise.all(agents.map(async agent => {
-        const queues = await fetchAgentQueues(agent.id, token);
-        return { ...agent, queues }; // Ensure the agent object includes the name and queues
-      }));
-
-      console.log("Agents with queues:", agentsWithQueues); // Debugging log
-      populateTable(agentsWithQueues, 'queue');
-    }
-
-    async function fetchAgentsBySkill(skillId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/users?routingSkills=${skillId}`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities || [];
-      } catch (error) {
-        console.error("Error fetching agents by skill:", error);
-        return [];
-      }
-    }
-
-    async function fetchAgentsByQueue(queueId, token) {
-      const url = `https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members`;
-      try {
-        const response = await fetch(url, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        return data.entities.map(member => ({
-          id: member.user.id,
-          name: member.user.name,
-          queueId: queueId, // Store the queue ID for later use
-          queueName: member.queue.name // Extract the queue name from the member object
-        }));
-      } catch (error) {
-        console.error("Error fetching agents by queue:", error);
-        return [];
-      }
-    }
-
-    function populateTable(agents, type) {
-      const tableBody = document.querySelector(`#${type === 'skill' ? 'agentsTableForSkill' : 'agentsTableForQueue'} tbody`);
-      tableBody.innerHTML = "";
-
-      agents.forEach(agent => {
-        console.log("Agent data:", agent); // Debugging log to check agent structure
-
-        let row = document.createElement("tr");
         row.innerHTML = `
-          <td><input type="checkbox" data-user-id="${agent.id}"></td>
-          <td>${agent.name || 'N/A'}</td> <!-- Ensure name is displayed -->
-          <td>${type === 'skill' ? (agent.skills ? agent.skills.map(skill => skill.name).join(', ') : 'No Skills') : (agent.queues ? agent.queues.map(queue => queue.name).join(', ') : 'No Queues')}</td>
+          <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-remove"></td>
+          <td>${user.name}</td>
+          <td>${skills.length ? skills.map(s => `${s.name}${formatProf(s.proficiency)}`).join(', ') : 'No Skills'}</td>
           <td>
-            <select data-user-id="${agent.id}">
-              <option value="">Select</option>
-              ${type === 'skill' ? availableSkills.map(skill => `<option value="${skill.id}">${skill.name}</option>`).join('') : availableQueues.map(queue => `<option value="${queue.id}">${queue.name}</option>`).join('')}
+            <select data-user-id="${user.id}" class="skill-select-remove" ${skills.length ? '' : 'disabled'}>
+              ${skillOptions}
             </select>
           </td>
-          ${type === 'skill' ? `<td><input type="number" min="0" max="5" step="0.1" data-user-id="${agent.id}" placeholder="Proficiency"></td><td><input type="checkbox" class="delete-skill-checkbox" data-user-id="${agent.id}"></td>` : ''}
         `;
-        tableBody.appendChild(row);
+        tbody.appendChild(row);
       });
+
+      document.querySelectorAll('.user-checkbox-remove').forEach(cb => cb.addEventListener('change', updateRemoveButtonState));
+      document.querySelectorAll('.skill-select-remove').forEach(sel => sel.addEventListener('change', updateRemoveButtonState));
+      updateRemoveButtonState();
     }
+
+    function populateAddTable(usersWithSkills, preselectedSkillId="") {
+      const tbody = document.querySelector('#userSkillsTableAdd tbody');
+      tbody.innerHTML = "";
+
+      if (!usersWithSkills.length) {
+        tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
+        updateAddButtonState();
+        return;
+      }
+
+      usersWithSkills.forEach(({ user, skills }) => {
+        const assignedIds = skills.map(s => s.id);
+        const choices = availableSkills.filter(s => !assignedIds.includes(s.id));
+        const options = choices.length
+          ? ['<option value="">Select Skill to Add</option>', ...choices.map(s => `<option value="${s.id}" ${s.id===preselectedSkillId?'selected':''}>${s.name}</option>`)].join('')
+          : '<option value="">All Skills Assigned</option>';
+
+        const disabled = choices.length ? '' : 'disabled';
+        const row = document.createElement("tr");
+        const defaultProf = 3.0;
+
+        row.innerHTML = `
+          <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-add"></td>
+          <td>${user.name}</td>
+          <td>${skills.length ? skills.map(s => `${s.name}${formatProf(s.proficiency)}`).join(', ') : 'No Skills'}</td>
+          <td>
+            <div style="display:grid;grid-template-columns: minmax(220px, 1fr) auto; gap: 12px; align-items:center;">
+              <select data-user-id="${user.id}" class="skill-select-add" ${disabled}>
+                ${options}
+              </select>
+              <div class="prof-input-wrap">
+                <button type="button" class="tiny-btn dec-prof" data-user-id="${user.id}">−</button>
+                <input type="number" step="0.5" min="1" max="5" class="prof-input" data-user-id="${user.id}" value="${defaultProf}" ${disabled}/>
+                <button type="button" class="tiny-btn inc-prof" data-user-id="${user.id}">+</button>
+              </div>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      document.querySelectorAll('.user-checkbox-add').forEach(cb => cb.addEventListener('change', updateAddButtonState));
+      document.querySelectorAll('.skill-select-add').forEach(sel => sel.addEventListener('change', updateAddButtonState));
+      document.querySelectorAll('.prof-input').forEach(inp => {
+        inp.addEventListener('input', () => { normalizeProficiencyInput(inp); updateAddButtonState(); });
+        inp.addEventListener('blur', () => { normalizeProficiencyInput(inp, true); updateAddButtonState(); });
+      });
+      document.querySelectorAll('.inc-prof').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const input = document.querySelector(`.prof-input[data-user-id="${btn.dataset.userId}"]`);
+          nudgeProficiency(input, +0.5);
+          updateAddButtonState();
+        });
+      });
+      document.querySelectorAll('.dec-prof').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const input = document.querySelector(`.prof-input[data-user-id="${btn.dataset.userId}"]`);
+          nudgeProficiency(input, -0.5);
+          updateAddButtonState();
+        });
+      });
+
+      updateAddButtonState();
+    }
+
+    // ======== BUTTON STATES ========
+    function updateRemoveButtonState() {
+      const removeButton = document.getElementById('removeSkills');
+      const checked = [...document.querySelectorAll('.user-checkbox-remove:checked')];
+      let ok = false;
+      checked.forEach(cb => {
+        const uid = cb.getAttribute('data-user-id');
+        const sel = document.querySelector(`.skill-select-remove[data-user-id="${uid}"]`);
+        if (sel && sel.value) ok = true;
+      });
+      removeButton.disabled = !(checked.length > 0 && ok);
+    }
+
+    function updateAddButtonState() {
+      const addButton = document.getElementById('addSkills');
+      const checked = [...document.querySelectorAll('.user-checkbox-add:checked')];
+      let ok = true;
+      if (checked.length === 0) ok = false;
+
+      checked.forEach(cb => {
+        const uid = cb.getAttribute('data-user-id');
+        const sel = document.querySelector(`.skill-select-add[data-user-id="${uid}"]`);
+        const inp = document.querySelector(`.prof-input[data-user-id="${uid}"]`);
+        if (!sel || !sel.value) ok = false;
+        if (!inp || !isValidProficiency(inp.value)) ok = false;
+      });
+
+      addButton.disabled = !ok;
+    }
+
+    // ======== ACTIONS ========
+    async function removeSelectedSkills() {
+      const checked = [...document.querySelectorAll('.user-checkbox-remove:checked')];
+      const operations = [];
+
+      checked.forEach(cb => {
+        const uid = cb.getAttribute('data-user-id');
+        const sel = document.querySelector(`.skill-select-remove[data-user-id="${uid}"]`);
+        const sid = sel ? sel.value : null;
+        if (sid) operations.push({ userId: uid, skillId: sid });
+      });
+
+      if (!operations.length) { showMessage('No valid operations to perform.'); return; }
+
+      const btn = document.getElementById('removeSkills');
+      try {
+        btn.disabled = true; btn.textContent = 'Processing...';
+        const results = await Promise.allSettled(operations.map(op => removeSkillFromUser(op.userId, op.skillId)));
+        const failures = results.filter(r => r.status === 'rejected');
+        if (failures.length) {
+          console.error("Some removals failed:", failures);
+          showMessage(`Completed with ${failures.length} error(s). Check console for details.`);
+        } else {
+          showMessage('All skill removals completed successfully!', 'success');
+        }
+        await fetchUsers('remove');
+      } catch (e) {
+        console.error("Error removing skills:", e);
+        showMessage(`Failed to remove skills: ${e.message}`);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Remove Selected Skills from Selected Users';
+      }
+    }
+
+    async function addSelectedSkills() {
+      const checked = [...document.querySelectorAll('.user-checkbox-add:checked')];
+      const operations = [];
+
+      checked.forEach(cb => {
+        const uid = cb.getAttribute('data-user-id');
+        const sel = document.querySelector(`.skill-select-add[data-user-id="${uid}"]`);
+        const inp = document.querySelector(`.prof-input[data-user-id="${uid}"]`);
+        const sid = sel ? sel.value : null;
+        const prof = inp ? clampProficiency(parseFloat(inp.value)) : null;
+        if (sid && isValidProficiency(prof)) operations.push({ userId: uid, skillId: sid, proficiency: prof });
+      });
+
+      if (!operations.length) {
+        showMessage('No valid operations to perform. Please ensure you selected users, a skill, and a valid proficiency.');
+        return;
+      }
+
+      const btn = document.getElementById('addSkills');
+      try {
+        btn.disabled = true; btn.textContent = 'Processing...';
+        const results = await Promise.allSettled(operations.map(op => addSkillToUser(op.userId, op.skillId, op.proficiency)));
+        const failures = results.filter(r => r.status === 'rejected');
+        if (failures.length) {
+          const msgs = failures.map(f => f.reason?.message || 'Unknown error').join('; ');
+          console.error("Some additions failed:", failures);
+          showMessage(`Completed with ${failures.length} error(s): ${msgs}`);
+        } else {
+          showMessage('All skill additions completed successfully!', 'success');
+        }
+        await fetchUsers('add');
+      } catch (e) {
+        console.error("Error adding skills:", e);
+        showMessage(`Failed to add skills: ${e.message}`);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Add Selected Skills to Selected Users';
+      }
+    }
+
+    // ======== API CALLS (per-user) ========
+    async function removeSkillFromUser(userId, skillId) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills/${skillId}`;
+      const res = await fetch(url, { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to remove skill ${skillId} from user ${userId}`);
+      return { userId, skillId, success: true };
+    }
+
+    async function addSkillToUser(userId, skillId, proficiency) {
+      const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
+      const body = { id: skillId, proficiency: Number(proficiency) };
+      const res = await fetch(url, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to add skill ${skillId} to user ${userId}`);
+      return { userId, skillId, success: true };
+    }
+
+    async function safeJson(res) {
+      try { return await res.json(); } catch { return null; }
+    }
+
+    // ======== PROFICIENCY HELPERS ========
+    function formatProf(p) {
+      if (typeof p !== 'number') return '';
+      return ` (${p.toFixed(1)})`;
+    }
+
+    function normalizeProficiencyInput(input, snapToStep=false) {
+      let v = parseFloat(input.value);
+      if (Number.isNaN(v)) { input.value = ''; return; }
+      if (snapToStep) v = roundToHalf(v);
+      v = clampProficiency(v);
+      input.value = v.toFixed(1);
+    }
+
+    function nudgeProficiency(input, delta) {
+      let v = parseFloat(input.value);
+      if (Number.isNaN(v)) v = 3.0;
+      v = roundToHalf(v + delta);
+      v = clampProficiency(v);
+      input.value = v.toFixed(1);
+    }
+
+    function isValidProficiency(v) {
+      const n = parseFloat(v);
+      if (Number.isNaN(n)) return false;
+      return n >= 1 && n <= 5 && Math.abs(n*2 - Math.round(n*2)) < 1e-9; // must be multiple of 0.5
+    }
+
+    function clampProficiency(v) {
+      if (Number.isNaN(v)) return 3.0;
+      return Math.min(5, Math.max(1, v));
+    }
+
+    function roundToHalf(v) {
+      return Math.round(v * 2) / 2;
+    }
+
+    // ======== UTILS ========
+    function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
   </script>
 </body>
 </html>

@@ -22,7 +22,7 @@
     select,input,button{padding:10px;border:1px solid var(--border-color);border-radius:6px;background:var(--card-bg);font-size:14px}
     button{background:var(--primary-color);color:#fff;font-weight:600;cursor:pointer;transition:background .2s}
     button:hover{background:var(--secondary-color)} button:disabled{background:var(--text-light);cursor:not-allowed}
-    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;align-items:end}
+    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:end}
     .full-width-btn{width:100%;padding:14px 18px;font-size:16px;margin-top:12px}
     .loading{opacity:.6;pointer-events:none}
     .selection-section{margin-bottom:20px;padding:15px;border:1px solid var(--border-color);border-radius:8px;background-color: var(--light-bg)}
@@ -43,7 +43,7 @@
     .muted{color:var(--text-light);font-size:12px}
 
     /* Checkbox dropdown */
-    .checkbox-dropdown{position:relative;min-width:240px;width:100%}
+    .checkbox-dropdown{position:relative;min-width:220px;width:100%}
     .cd-trigger{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-color);border-radius:6px;background:#fff;padding:10px;cursor:pointer;width:100%;box-sizing:border-box}
     .cd-trigger .label{color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
     .cd-trigger .count{background:var(--pill);border:1px solid var(--border-color);border-radius:999px;padding:2px 8px;font-size:12px;color:#2c3e50;flex-shrink:0;margin-left:8px}
@@ -62,7 +62,7 @@
     /* Responsive adjustments for the controls grid */
     @media (max-width: 1200px) {
       .controls {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       }
     }
     
@@ -102,6 +102,10 @@
             <div id="managementUnitDropdownRemove" class="checkbox-dropdown"></div>
           </div>
           <div>
+            <label>Select Queues</label>
+            <div id="queueDropdownRemove" class="checkbox-dropdown"></div>
+          </div>
+          <div>
             <label>Select Agents</label>
             <div id="agentDropdownRemove" class="checkbox-dropdown"></div>
           </div>
@@ -118,7 +122,7 @@
             <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="muted">Pick any combo. If you only choose skills/management units, I'll scan those and show matching agents.</div>
+        <div class="muted">Pick any combo. If you only choose skills/queues/management units, I'll scan those and show matching agents.</div>
       </div>
 
       <div class="card">
@@ -145,6 +149,10 @@
           <div>
             <label>Select Management Units</label>
             <div id="managementUnitDropdownAdd" class="checkbox-dropdown"></div>
+          </div>
+          <div>
+            <label>Select Queues</label>
+            <div id="queueDropdownAdd" class="checkbox-dropdown"></div>
           </div>
           <div>
             <label>Select Agents</label>
@@ -190,6 +198,10 @@
           <div>
             <label>Select Management Units</label>
             <div id="managementUnitDropdownChange" class="checkbox-dropdown"></div>
+          </div>
+          <div>
+            <label>Select Queues</label>
+            <div id="queueDropdownChange" class="checkbox-dropdown"></div>
           </div>
           <div>
             <label>Select Agents</label>
@@ -240,13 +252,15 @@
     let availableTeams = [];
     let availableSkills = [];
     let availableManagementUnits = [];
+    let availableQueues = [];
 
     // Checkbox dropdown instances (per tab)
     const dd = {
       agent: { remove:null, add:null, change:null },
       skill: { remove:null, add:null, change:null },
       team:  { remove:null, add:null, change:null },
-      managementUnit: { remove:null, add:null, change:null }
+      managementUnit: { remove:null, add:null, change:null },
+      queue: { remove:null, add:null, change:null }
     };
 
     // ===== OAUTH BOOT =====
@@ -275,7 +289,13 @@
     // ===== INIT =====
     async function initializeApp(){
       try {
-        await Promise.all([fetchAllUsers(), fetchAllTeams(), fetchAllSkills(), fetchAllManagementUnits()]);
+        await Promise.all([
+          fetchAllUsers(), 
+          fetchAllTeams(), 
+          fetchAllSkills(), 
+          fetchAllManagementUnits(),
+          fetchAllQueues()
+        ]);
         createAllDropdowns();
         populateDropdowns();
         setupEventListeners();
@@ -330,6 +350,17 @@
         total = data.total || 0; page++;
       } while (all.length < total);
       availableManagementUnits = all;
+    }
+    async function fetchAllQueues(){
+      let all=[], page=1, size=100, total=0;
+      do{
+        const res = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch queues');
+        const data = await res.json();
+        all = all.concat(data.entities || []);
+        total = data.total || 0; page++;
+      } while (all.length < total);
+      availableQueues = all;
     }
 
     // ===== GENERIC CHECKBOX DROPDOWN =====
@@ -441,6 +472,10 @@
       dd.managementUnit.remove = createCheckboxDropdown('managementUnitDropdownRemove', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
       dd.managementUnit.add    = createCheckboxDropdown('managementUnitDropdownAdd',    { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
       dd.managementUnit.change = createCheckboxDropdown('managementUnitDropdownChange', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
+      // Queues
+      dd.queue.remove = createCheckboxDropdown('queueDropdownRemove', { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
+      dd.queue.add    = createCheckboxDropdown('queueDropdownAdd',    { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
+      dd.queue.change = createCheckboxDropdown('queueDropdownChange', { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
     }
 
     // ===== POPULATE =====
@@ -477,6 +512,14 @@
       dd.managementUnit.remove.setOptions(managementUnitOpts);
       dd.managementUnit.add.setOptions(managementUnitOpts);
       dd.managementUnit.change.setOptions(managementUnitOpts);
+
+      // Queues
+      const queueOpts = (availableQueues||[])
+        .map(q => ({ value: q.id, label: q.name }))
+        .sort((a,b)=>a.label.localeCompare(b.label));
+      dd.queue.remove.setOptions(queueOpts);
+      dd.queue.add.setOptions(queueOpts);
+      dd.queue.change.setOptions(queueOpts);
     }
 
     // ===== EVENTS =====
@@ -516,6 +559,7 @@
     function getSelectedSkillIds(mode){ return dd.skill[mode].getSelectedValues(); }
     function getSelectedTeamIds(mode){  return dd.team[mode].getSelectedValues();  }
     function getSelectedManagementUnitIds(mode){  return dd.managementUnit[mode].getSelectedValues();  }
+    function getSelectedQueueIds(mode){  return dd.queue[mode].getSelectedValues();  }
 
     // ===== FETCH USERS + SKILLS =====
     async function fetchUsers(mode){
@@ -523,8 +567,9 @@
       const teamIds  = getSelectedTeamIds(mode);
       const skillIds = getSelectedSkillIds(mode);
       const managementUnitIds = getSelectedManagementUnitIds(mode);
+      const queueIds = getSelectedQueueIds(mode);
 
-      if (agentIds.length === 0 && teamIds.length === 0 && skillIds.length === 0 && managementUnitIds.length === 0){
+      if (agentIds.length === 0 && teamIds.length === 0 && skillIds.length === 0 && managementUnitIds.length === 0 && queueIds.length === 0){
         showMessage('Please select at least one search option.');
         return;
       }
@@ -547,6 +592,11 @@
         const managementUnitUsersArrays = await Promise.all(managementUnitIds.map(muid => usersFromManagementUnit(muid)));
         const map = new Map();
         managementUnitUsersArrays.flat().forEach(u => map.set(u.id, u));
+        users = Array.from(map.values());
+      } else if (queueIds.length){
+        const queueMembersArrays = await Promise.all(queueIds.map(qid => usersFromQueue(qid)));
+        const map = new Map();
+        queueMembersArrays.flat().forEach(u => map.set(u.id, u));
         users = Array.from(map.values());
       } else if (skillIds.length){
         users = validUsers; // we'll filter after fetching their skills
@@ -600,6 +650,23 @@
       
       const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
       return allUsers.map(muUser => validUsers.find(u=>u.id===muUser.id)).filter(Boolean);
+    }
+
+    async function usersFromQueue(queueId){
+      let allMembers = [], page=1, size=100, totalMembers=0;
+      do{
+        const res = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch members for queue ${queueId}`);
+        const data = await res.json();
+        allMembers = allMembers.concat(data.entities || []);
+        totalMembers = data.total || 0; page++;
+      } while (allMembers.length < totalMembers);
+      
+      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
+      return allMembers.map(member => {
+        const userId = member.user?.id;
+        return userId ? validUsers.find(u=>u.id===userId) : null;
+      }).filter(Boolean);
     }
 
     async function fetchUserSkills(userId){

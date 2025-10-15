@@ -22,7 +22,7 @@
     select,input,button{padding:10px;border:1px solid var(--border-color);border-radius:6px;background:var(--card-bg);font-size:14px}
     button{background:var(--primary-color);color:#fff;font-weight:600;cursor:pointer;transition:background .2s}
     button:hover{background:var(--secondary-color)} button:disabled{background:var(--text-light);cursor:not-allowed}
-    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:end}
+    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;align-items:end}
     .full-width-btn{width:100%;padding:14px 18px;font-size:16px;margin-top:12px}
     .loading{opacity:.6;pointer-events:none}
     .selection-section{margin-bottom:20px;padding:15px;border:1px solid var(--border-color);border-radius:8px;background-color: var(--light-bg)}
@@ -43,21 +43,34 @@
     .muted{color:var(--text-light);font-size:12px}
 
     /* Checkbox dropdown */
-    .checkbox-dropdown{position:relative;min-width:260px}
-    .cd-trigger{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-color);border-radius:6px;background:#fff;padding:10px;cursor:pointer}
-    .cd-trigger .label{color:var(--text-color)}
-    .cd-trigger .count{background:var(--pill);border:1px solid var(--border-color);border-radius:999px;padding:2px 8px;font-size:12px;color:#2c3e50}
-    .cd-panel{position:absolute;z-index:1000;margin-top:6px;background:#fff;border:1px solid var(--border-color);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:100%;max-height:340px;overflow:hidden;display:none}
+    .checkbox-dropdown{position:relative;min-width:240px;width:100%}
+    .cd-trigger{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-color);border-radius:6px;background:#fff;padding:10px;cursor:pointer;width:100%;box-sizing:border-box}
+    .cd-trigger .label{color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .cd-trigger .count{background:var(--pill);border:1px solid var(--border-color);border-radius:999px;padding:2px 8px;font-size:12px;color:#2c3e50;flex-shrink:0;margin-left:8px}
+    .cd-panel{position:absolute;z-index:1000;margin-top:6px;background:#fff;border:1px solid var(--border-color);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:100%;max-height:340px;overflow:hidden;display:none;box-sizing:border-box}
     .cd-panel.open{display:block}
     .cd-header{padding:10px;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center}
-    .cd-search{flex:1;border:1px solid var(--border-color);border-radius:6px;padding:8px}
+    .cd-search{flex:1;border:1px solid var(--border-color);border-radius:6px;padding:8px;width:100%;box-sizing:border-box}
     .cd-actions{display:flex;gap:8px}
-    .cd-actions button{background:#eef6f2;color:#2c3e50;border:1px solid var(--border-color);border-radius:6px;padding:8px 10px;cursor:pointer}
+    .cd-actions button{background:#eef6f2;color:#2c3e50;border:1px solid var(--border-color);border-radius:6px;padding:8px 10px;cursor:pointer;white-space:nowrap}
     .cd-selectall{padding:8px 12px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:10px}
     .cd-list{max-height:260px;overflow:auto}
     .cd-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f3f5}
     .cd-item label{display:flex;align-items:center;gap:10px;cursor:pointer;width:100%}
     .cd-footer{padding:8px 12px;background:#fafafa;border-top:1px solid var(--border-color);font-size:12px;color:var(--text-light);display:flex;justify-content:space-between}
+    
+    /* Responsive adjustments for the controls grid */
+    @media (max-width: 1200px) {
+      .controls {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -85,6 +98,10 @@
         <h3>Search Options</h3>
         <div class="controls">
           <div>
+            <label>Select Management Units</label>
+            <div id="managementUnitDropdownRemove" class="checkbox-dropdown"></div>
+          </div>
+          <div>
             <label>Select Agents</label>
             <div id="agentDropdownRemove" class="checkbox-dropdown"></div>
           </div>
@@ -101,7 +118,7 @@
             <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="muted">Pick any combo. If you only choose skills, I’ll scan everyone and show those who have them.</div>
+        <div class="muted">Pick any combo. If you only choose skills/management units, I'll scan those and show matching agents.</div>
       </div>
 
       <div class="card">
@@ -126,6 +143,10 @@
         <h3>Search Options</h3>
         <div class="controls">
           <div>
+            <label>Select Management Units</label>
+            <div id="managementUnitDropdownAdd" class="checkbox-dropdown"></div>
+          </div>
+          <div>
             <label>Select Agents</label>
             <div id="agentDropdownAdd" class="checkbox-dropdown"></div>
           </div>
@@ -142,7 +163,7 @@
             <button id="fetchUsersAdd" class="full-width-btn">Get Users</button>
           </div>
         </div>
-        <div class="muted">Type or nudge proficiency in 0.5 steps (1–5). I’ll preselect a missing skill if you filtered by it.</div>
+        <div class="muted">Type or nudge proficiency in 0.5 steps (1–5). I'll preselect a missing skill if you filtered by it.</div>
       </div>
 
       <div class="card">
@@ -166,6 +187,10 @@
       <div class="selection-section">
         <h3>Search Options</h3>
         <div class="controls">
+          <div>
+            <label>Select Management Units</label>
+            <div id="managementUnitDropdownChange" class="checkbox-dropdown"></div>
+          </div>
           <div>
             <label>Select Agents</label>
             <div id="agentDropdownChange" class="checkbox-dropdown"></div>
@@ -214,12 +239,14 @@
     let availableUsers = [];
     let availableTeams = [];
     let availableSkills = [];
+    let availableManagementUnits = [];
 
     // Checkbox dropdown instances (per tab)
     const dd = {
       agent: { remove:null, add:null, change:null },
       skill: { remove:null, add:null, change:null },
       team:  { remove:null, add:null, change:null },
+      managementUnit: { remove:null, add:null, change:null }
     };
 
     // ===== OAUTH BOOT =====
@@ -248,7 +275,7 @@
     // ===== INIT =====
     async function initializeApp(){
       try {
-        await Promise.all([fetchAllUsers(), fetchAllTeams(), fetchAllSkills()]);
+        await Promise.all([fetchAllUsers(), fetchAllTeams(), fetchAllSkills(), fetchAllManagementUnits()]);
         createAllDropdowns();
         populateDropdowns();
         setupEventListeners();
@@ -292,6 +319,17 @@
         total = data.total || 0; page++;
       } while (all.length < total);
       availableSkills = all;
+    }
+    async function fetchAllManagementUnits(){
+      let all=[], page=1, size=100, total=0;
+      do{
+        const res = await fetch(`https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch management units');
+        const data = await res.json();
+        all = all.concat(data.entities || []);
+        total = data.total || 0; page++;
+      } while (all.length < total);
+      availableManagementUnits = all;
     }
 
     // ===== GENERIC CHECKBOX DROPDOWN =====
@@ -399,6 +437,10 @@
       dd.team.remove  = createCheckboxDropdown('teamDropdownRemove',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
       dd.team.add     = createCheckboxDropdown('teamDropdownAdd',     { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
       dd.team.change  = createCheckboxDropdown('teamDropdownChange',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
+      // Management Units
+      dd.managementUnit.remove = createCheckboxDropdown('managementUnitDropdownRemove', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
+      dd.managementUnit.add    = createCheckboxDropdown('managementUnitDropdownAdd',    { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
+      dd.managementUnit.change = createCheckboxDropdown('managementUnitDropdownChange', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
     }
 
     // ===== POPULATE =====
@@ -427,6 +469,14 @@
       dd.team.remove.setOptions(teamOpts);
       dd.team.add.setOptions(teamOpts);
       dd.team.change.setOptions(teamOpts);
+
+      // Management Units
+      const managementUnitOpts = (availableManagementUnits||[])
+        .map(mu => ({ value: mu.id, label: mu.name }))
+        .sort((a,b)=>a.label.localeCompare(b.label));
+      dd.managementUnit.remove.setOptions(managementUnitOpts);
+      dd.managementUnit.add.setOptions(managementUnitOpts);
+      dd.managementUnit.change.setOptions(managementUnitOpts);
     }
 
     // ===== EVENTS =====
@@ -465,14 +515,16 @@
     function getSelectedAgentIds(mode){ return dd.agent[mode].getSelectedValues(); }
     function getSelectedSkillIds(mode){ return dd.skill[mode].getSelectedValues(); }
     function getSelectedTeamIds(mode){  return dd.team[mode].getSelectedValues();  }
+    function getSelectedManagementUnitIds(mode){  return dd.managementUnit[mode].getSelectedValues();  }
 
     // ===== FETCH USERS + SKILLS =====
     async function fetchUsers(mode){
       const agentIds = getSelectedAgentIds(mode);
       const teamIds  = getSelectedTeamIds(mode);
       const skillIds = getSelectedSkillIds(mode);
+      const managementUnitIds = getSelectedManagementUnitIds(mode);
 
-      if (agentIds.length === 0 && teamIds.length === 0 && skillIds.length === 0){
+      if (agentIds.length === 0 && teamIds.length === 0 && skillIds.length === 0 && managementUnitIds.length === 0){
         showMessage('Please select at least one search option.');
         return;
       }
@@ -491,8 +543,13 @@
         const map = new Map();
         teamMembersArrays.flat().forEach(u => map.set(u.id, u));
         users = Array.from(map.values());
+      } else if (managementUnitIds.length){
+        const managementUnitUsersArrays = await Promise.all(managementUnitIds.map(muid => usersFromManagementUnit(muid)));
+        const map = new Map();
+        managementUnitUsersArrays.flat().forEach(u => map.set(u.id, u));
+        users = Array.from(map.values());
       } else if (skillIds.length){
-        users = validUsers; // we’ll filter after fetching their skills
+        users = validUsers; // we'll filter after fetching their skills
       }
 
       if (!users.length){ showMessage('No users found for the selected criteria.'); return; }
@@ -529,6 +586,20 @@
       const members = data.entities || [];
       const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
       return members.map(m => validUsers.find(u=>u.id===m.id)).filter(Boolean);
+    }
+
+    async function usersFromManagementUnit(managementUnitId){
+      let allUsers = [], page=1, size=100, total=0;
+      do{
+        const res = await fetch(`https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits/${managementUnitId}/users?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch management unit ${managementUnitId} users`);
+        const data = await res.json();
+        allUsers = allUsers.concat(data.entities || []);
+        total = data.total || 0; page++;
+      } while (allUsers.length < total);
+      
+      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
+      return allUsers.map(muUser => validUsers.find(u=>u.id===muUser.id)).filter(Boolean);
     }
 
     async function fetchUserSkills(userId){

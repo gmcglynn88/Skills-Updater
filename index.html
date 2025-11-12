@@ -2,46 +2,200 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>Schedule Analytics Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>IPI Skill Updates</title>
   <style>
     :root{
       --primary-color:#63AB8F; --secondary-color:#4A8C7D; --border-color:#DEE2E6;
       --light-bg:#F8F9FA; --card-bg:#FFFFFF; --text-color:#2C3E50; --text-light:#6C757D;
-      --pill:#e9f6f0;
+      --pill:#e9f6f0; --warning-bg:#fef3f2; --warning-border:#fecdca; --warning-text:#b42318;
+      --success-bg:#f6fef9; --success-border:#75e0a7; --success-text:#079455;
     }
-    /* Aptos first, then fallbacks */
     body{
       font-family:'Aptos','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
       margin:20px;padding:20px;max-width:1400px;background:var(--light-bg);color:var(--text-color)
     }
-    #logo-container{text-align:center;margin-bottom:20px} #logo{width:300px}
+    #logo-container{text-align:center;margin-bottom:20px}
+    #logo{width:300px}
     h1{margin:0 0 16px}
-    .card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+    .card{
+      background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;
+      padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)
+    }
     label{display:block;font-weight:600;margin-bottom:6px}
-    select,input,button{padding:10px;border:1px solid var(--border-color);border-radius:6px;background:var(--card-bg);font-size:14px}
-    button{background:var(--primary-color);color:#fff;font-weight:600;cursor:pointer;transition:background .2s}
-    button:hover{background:var(--secondary-color)} button:disabled{background:var(--text-light);cursor:not-allowed}
-    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:end}
+    input,select,button,textarea{
+      padding:10px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px
+    }
+    button{
+      background:var(--primary-color);color:#fff;font-weight:600;cursor:pointer;transition:background .2s
+    }
+    button:hover{background:var(--secondary-color)}
+    button:disabled{background:var(--text-light);cursor:not-allowed}
+    .controls{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:end
+    }
     .full-width-btn{width:100%;padding:14px 18px;font-size:16px;margin-top:12px}
-    .loading{opacity:.6;pointer-events:none}
-    .selection-section{margin-bottom:20px;padding:15px;border:1px solid var(--border-color);border-radius:8px;background-color: var(--light-bg)}
-    .selection-section h3{margin-top:0;color:var(--primary-color)}
-    table{width:100%;border-collapse:collapse;margin-top:20px}
-    th,td{border:1px solid var(--border-color);padding:10px;text-align:left;vertical-align:top}
-    th{background-color:var(--primary-color);color:#fff}
-    .select-all-checkbox{margin-bottom:10px}
-    .error-message{color:#d9534f;padding:10px;margin:10px 0;border:1px solid #d9534f;border-radius:4px;background:#f9f2f2}
-    .success-message{color:#3c763d;padding:10px;margin:10px 0;border:1px solid #3c763d;border-radius:4px;background:#dff0d8}
-    .tab-container{display:flex;margin-bottom:20px;border-bottom:1px solid var(--border-color)}
-    .tab{padding:12px 24px;cursor:pointer;border:1px solid var(--border-color);border-bottom:none;border-radius:8px 8px 0 0;margin-right:4px;background: var(--light-bg);transition:background .2s}
-    .tab.active{background:var(--primary-color);color:white;border-color:var(--primary-color)}
+    .muted{color:var(--text-light);font-size:12px;margin-top:4px}
+    .section-title{margin:0 0 10px;color:var(--secondary-color)}
+
+    /* Tabs */
+    .tabs{display:flex;border-bottom:1px solid var(--border-color);margin-bottom:16px}
+    .tab{
+      padding:12px 24px;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;
+      transition:all 0.2s;color:var(--text-light)
+    }
+    .tab.active{
+      color:var(--primary-color);border-bottom-color:var(--primary-color);background:var(--light-bg)
+    }
     .tab-content{display:none}
     .tab-content.active{display:block}
-    .prof-wrap{display:flex;gap:8px;align-items:center;margin-top:6px}
-    .prof-input,.prof-input-change{width:90px}
-    .muted{color:var(--text-light);font-size:12px}
 
+    #messageContainer{display:none;margin-top:12px}
+    .error-message{
+      color:#b4231a;background:#fee2e2;border:1px solid:#fecaca;padding:10px;border-radius:6px
+    }
+    .success-message{
+      color:#14532d;background:#dcfce7;border:1px solid:#bbf7d0;padding:10px;border-radius:6px
+    }
+    .info-message{
+      color:#6b4e16;background:#fff7ed;border:1px solid:#ffedd5;padding:10px;border-radius:6px
+    }
+
+    .schedule-table{width:100%;border-collapse:collapse;margin-top:16px}
+    .schedule-table th,.schedule-table td{
+      border:1px solid var(--border-color);padding:8px;font-size:13px
+    }
+    .schedule-table th{background:var(--light-bg);text-align:left}
+    .pill{
+      display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;
+      background:var(--pill);font-size:11px;color:var(--secondary-color)
+    }
+    .schedule-meta{margin-top:8px;font-size:12px;color:var(--text-light)}
+    
+    /* Analytics specific styles */
+    .analytics-controls{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:16px
+    }
+    .warning-row{background:var(--warning-bg) !important;border-left:4px solid var(--warning-text)}
+    .overtime-badge{
+      background:#dc2626;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600
+    }
+    .absence-badge{
+      background:#ea580c;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600
+    }
+    .chart-container{
+      background:white;border:1px solid var(--border-color);border-radius:8px;padding:16px;margin-top:16px
+    }
+    .metric-card{
+      background:white;border:1px solid var(--border-color);border-radius:8px;padding:16px;text-align:center
+    }
+    .metric-value{font-size:24px;font-weight:bold;color:var(--primary-color);margin:8px 0}
+    .metric-label{font-size:12px;color:var(--text-light);text-transform:uppercase}
+    
+    details pre{
+      max-height:250px;overflow:auto;background:#0f172a;color:#e5e7eb;
+      padding:10px;border-radius:6px;font-size:11px
+    }
+    
+    /* Overtime metrics row */
+    .overtime-metrics {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .overtime-metric-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      flex: 1;
+      min-width: 150px;
+    }
+    
+    /* Nested absence details */
+    .absence-details {
+      margin-top: 8px;
+      padding-left: 16px;
+      border-left: 2px solid var(--border-color);
+    }
+    .absence-day {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .absence-day:last-child {
+      border-bottom: none;
+    }
+    .absence-date {
+      font-weight: 500;
+    }
+    .absence-duration {
+      color: var(--text-light);
+    }
+    
+    /* Overtime details */
+    .overtime-details {
+      margin-top: 8px;
+      padding-left: 16px;
+      border-left: 2px solid var(--border-color);
+    }
+    .overtime-activity {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .overtime-activity:last-child {
+      border-bottom: none;
+    }
+    .overtime-date {
+      font-weight: 500;
+    }
+    .overtime-duration {
+      color: var(--text-light);
+    }
+    
+    /* Subtabs for overtime */
+    .subtabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin: 16px 0;
+    }
+    .subtab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-weight: 600;
+      transition: all 0.2s;
+      color: var(--text-light);
+    }
+    .subtab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .subtab-content {
+      display: none;
+    }
+    .subtab-content.active {
+      display: block;
+    }
+    
+    /* Export buttons */
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin: 16px 0;
+      justify-content: flex-start;
+    }
+    .export-btn {
+      background: var(--secondary-color);
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    
     /* Checkbox dropdown */
     .checkbox-dropdown{position:relative;min-width:220px;width:100%}
     .cd-trigger{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-color);border-radius:6px;background:#fff;padding:10px;cursor:pointer;width:100%;box-sizing:border-box}
@@ -58,312 +212,305 @@
     .cd-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f3f5}
     .cd-item label{display:flex;align-items:center;gap:10px;cursor:pointer;width:100%}
     .cd-footer{padding:8px 12px;background:#fafafa;border-top:1px solid var(--border-color);font-size:12px;color:var(--text-light);display:flex;justify-content:space-between}
-    
-    /* Responsive adjustments for the controls grid */
-    @media (max-width: 1200px) {
-      .controls {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .controls {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 <body>
   <div id="logo-container">
     <img id="logo" src="https://raw.githubusercontent.com/gmcglynn88/ExternalWorkCreation/main/Consultinglogo.png" alt="Company Logo">
   </div>
-  <h1>Skill Management Tool</h1>
 
-  <div id="loginSection" class="card" style="text-align:center;margin:20px;">
-    <div class="loading">Authenticating with PureCloud...</div>
+  <h1>Schedule Analytics Dashboard</h1>
+
+  <div id="authCard" class="card">
+    <div id="auth-message" class="info-message">Authenticating with Genesys Cloud...</div>
   </div>
 
   <div id="appContent" style="display:none;">
-    <div id="messageContainer" style="display:none;"></div>
+    <div id="messageContainer"></div>
 
-    <div class="tab-container">
-      <div class="tab active" data-tab="remove">Remove Skills</div>
-      <div class="tab" data-tab="add">Add Skills</div>
-      <div class="tab" data-tab="change">Change Proficiency</div>
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <div class="tab active" data-tab="schedule">Schedule View</div>
+      <div class="tab" data-tab="overtime">Overtime Tracking</div>
+      <div class="tab" data-tab="absence">Absence Analytics</div>
     </div>
 
-    <!-- Remove -->
-    <div id="removeTab" class="tab-content active">
-      <div class="selection-section">
-        <h3>Search Options</h3>
+    <!-- Schedule Tab -->
+    <div id="schedule-tab" class="tab-content active">
+      <div class="card">
+        <h2 class="section-title">Filters</h2>
         <div class="controls">
           <div>
-            <label>Select Management Units</label>
-            <div id="managementUnitDropdownRemove" class="checkbox-dropdown"></div>
+            <label for="businessUnitSelect">Business Unit</label>
+            <select id="businessUnitSelect">
+              <option value="">Select business unit</option>
+            </select>
+            <div class="muted">Required</div>
           </div>
+
           <div>
-            <label>Select Queues</label>
-            <div id="queueDropdownRemove" class="checkbox-dropdown"></div>
+            <label for="managementUnitSelect">Management Unit</label>
+            <select id="managementUnitSelect" disabled>
+              <option value="">Select management unit</option>
+            </select>
+            <div class="muted">Required for schedule search</div>
           </div>
+
           <div>
-            <label>Select Agents</label>
-            <div id="agentDropdownRemove" class="checkbox-dropdown"></div>
+            <label for="teamSelect">Team</label>
+            <div id="teamDropdown" class="checkbox-dropdown"></div>
+            <div class="muted">Optional – narrows users by team</div>
           </div>
+
           <div>
-            <label>Select Skills</label>
-            <div id="skillDropdownRemove" class="checkbox-dropdown"></div>
+            <label for="userSelect">User</label>
+            <div id="userDropdown" class="checkbox-dropdown"></div>
+            <div class="muted">Required – schedule shown for this user</div>
           </div>
+
           <div>
-            <label>Select Teams</label>
-            <div id="teamDropdownRemove" class="checkbox-dropdown"></div>
+            <label for="startDate">Start date</label>
+            <input type="date" id="startDate" />
+            <div class="muted">e.g. 2025-11-03</div>
           </div>
+
           <div>
-            <label>&nbsp;</label>
-            <button id="fetchUsersRemove" class="full-width-btn">Get Users</button>
+            <label for="endDate">End date</label>
+            <input type="date" id="endDate" />
+            <div class="muted">e.g. 2025-11-08</div>
           </div>
         </div>
-        <div class="muted">One or multiple filters must be selected to view</div>
+
+        <button id="loadScheduleBtn" class="full-width-btn">Load Schedule</button>
       </div>
 
-      <div class="card">
-        <h2 style="margin:0 0 12px;">Routing Skills — Remove</h2>
-        <table id="userSkillsTableRemove">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="selectAllUsersRemove" class="select-all-checkbox"></th>
-              <th>Agent</th>
-              <th>Skills Assigned</th>
-              <th>Action</th>
-            </tr>
-          </thead><tbody></tbody>
-        </table>
-        <button id="removeSkills" class="full-width-btn" disabled>Remove Selected Skills from Selected Users</button>
-      </div>
-    </div>
-
-    <!-- Add -->
-    <div id="addTab" class="tab-content">
-      <div class="selection-section">
-        <h3>Search Options</h3>
-        <div class="controls">
-          <div>
-            <label>Select Management Units</label>
-            <div id="managementUnitDropdownAdd" class="checkbox-dropdown"></div>
-          </div>
-          <div>
-            <label>Select Queues</label>
-            <div id="queueDropdownAdd" class="checkbox-dropdown"></div>
-          </div>
-          <div>
-            <label>Select Agents</label>
-            <div id="agentDropdownAdd" class="checkbox-dropdown"></div>
-          </div>
-          <div>
-            <label>Select Skills</label>
-            <div id="skillDropdownAdd" class="checkbox-dropdown"></div>
-          </div>
-          <div>
-            <label>Select Teams</label>
-            <div id="teamDropdownAdd" class="checkbox-dropdown"></div>
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <button id="fetchUsersAdd" class="full-width-btn">Get Users</button>
-          </div>
+      <div id="results" class="card" style="display:none;">
+        <div class="export-buttons">
+          <button id="exportScheduleBtn" class="export-btn">Export to CSV</button>
         </div>
-        <div class="muted">Type or nudge proficiency in 0.5 steps (1–5). I'll preselect a missing skill if you filtered by it.</div>
-      </div>
-
-      <div class="card">
-        <h2 style="margin:0 0 12px;">Routing Skills — Add</h2>
-        <table id="userSkillsTableAdd">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="selectAllUsersAdd" class="select-all-checkbox"></th>
-              <th>Agent</th>
-              <th>Skills Assigned</th>
-              <th>Action</th>
-            </tr>
-          </thead><tbody></tbody>
-        </table>
-        <button id="addSkills" class="full-width-btn" disabled>Add Selected Skills to Selected Users</button>
       </div>
     </div>
 
-    <!-- Change -->
-    <div id="changeTab" class="tab-content">
-      <div class="selection-section">
-        <h3>Search Options</h3>
+    <!-- Overtime Tab -->
+    <div id="overtime-tab" class="tab-content">
+      <div class="card">
+        <h2 class="section-title">Overtime Analysis</h2>
         <div class="controls">
           <div>
-            <label>Select Management Units</label>
-            <div id="managementUnitDropdownChange" class="checkbox-dropdown"></div>
+            <label for="overtimeBuSelect">Business Unit</label>
+            <select id="overtimeBuSelect">
+              <option value="">Select business unit</option>
+            </select>
           </div>
           <div>
-            <label>Select Queues</label>
-            <div id="queueDropdownChange" class="checkbox-dropdown"></div>
+            <label for="overtimeMuSelect">Management Unit</label>
+            <select id="overtimeMuSelect" disabled>
+              <option value="">Select management unit</option>
+            </select>
           </div>
           <div>
-            <label>Select Agents</label>
-            <div id="agentDropdownChange" class="checkbox-dropdown"></div>
+            <label for="overtimeTeamSelect">Team</label>
+            <div id="overtimeTeamDropdown" class="checkbox-dropdown"></div>
           </div>
           <div>
-            <label>Filter by Skills (optional)</label>
-            <div id="skillDropdownChange" class="checkbox-dropdown"></div>
+            <label for="overtimeStartDate">Start Date</label>
+            <input type="date" id="overtimeStartDate" />
           </div>
           <div>
-            <label>Select Teams</label>
-            <div id="teamDropdownChange" class="checkbox-dropdown"></div>
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <button id="fetchUsersChange" class="full-width-btn">Get Users</button>
+            <label for="overtimeEndDate">End Date</label>
+            <input type="date" id="overtimeEndDate" />
           </div>
         </div>
-        <div class="muted">Choose users, pick a skill per row, then tweak the number or nudge ±0.5.</div>
+        <button id="analyzeOvertimeBtn" class="full-width-btn">Analyze Overtime</button>
       </div>
 
+      <div id="overtimeResults" class="card" style="display:none;">
+        <div class="export-buttons">
+          <button id="exportOvertimeSummaryBtn" class="export-btn">Export Summary to CSV</button>
+          <button id="exportOvertimeDetailsBtn" class="export-btn">Export Details to CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Absence Tab -->
+    <div id="absence-tab" class="tab-content">
       <div class="card">
-        <h2 style="margin:0 0 12px;">Routing Skills — Change Proficiency</h2>
-        <table id="userSkillsTableChange">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="selectAllUsersChange" class="select-all-checkbox"></th>
-              <th>Agent</th>
-              <th>Skills Assigned</th>
-              <th>Change To</th>
-            </tr>
-          </thead><tbody></tbody>
-        </table>
-        <button id="updateProficiency" class="full-width-btn" disabled>Update Proficiency for Selected</button>
+        <h2 class="section-title">Absence Analytics</h2>
+        <div class="controls">
+          <div>
+            <label for="absenceBuSelect">Business Unit</label>
+            <select id="absenceBuSelect">
+              <option value="">Select business unit</option>
+            </select>
+          </div>
+          <div>
+            <label for="absenceMuSelect">Management Unit</label>
+            <select id="absenceMuSelect" disabled>
+              <option value="">Select management unit</option>
+            </select>
+          </div>
+          <div>
+            <label for="absenceTeamSelect">Team</label>
+            <div id="absenceTeamDropdown" class="checkbox-dropdown"></div>
+          </div>
+          <div>
+            <label for="absenceStartDate">Start Date</label>
+            <input type="date" id="absenceStartDate" />
+          </div>
+          <div>
+            <label for="absenceEndDate">End Date</label>
+            <input type="date" id="absenceEndDate" />
+          </div>
+          <div>
+            <label for="absenceThreshold">Alert Threshold (hours)</label>
+            <input type="number" id="absenceThreshold" value="16" min="0" step="1" />
+          </div>
+        </div>
+        <button id="analyzeAbsenceBtn" class="full-width-btn">Analyze Absence</button>
+      </div>
+
+      <div id="absenceResults" class="card" style="display:none;">
+        <div class="export-buttons">
+          <button id="exportAbsenceBtn" class="export-btn">Export to CSV</button>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    // ===== CONFIG =====
+    // ===== OAuth Config =====
     const clientId = 'fe305808-b368-4547-8af9-325d28d552bb';
-    const redirectUri = 'https://gmcglynn88.github.io/Skills-Updater/';
-    const oauthUrl = `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const redirectUri = 'https://gmcglynn88.github.io/Late_Break-Report/';
+    const oauthUrl = 'https://login.mypurecloud.ie/oauth/authorize?client_id=' + encodeURIComponent(clientId) + '&response_type=token&redirect_uri=' + encodeURIComponent(redirectUri);
+    const apiBase = 'https://api.mypurecloud.ie';
 
-    // ===== STATE =====
-    let token = null;
-    let availableUsers = [];
-    let availableTeams = [];
-    let availableSkills = [];
-    let availableManagementUnits = [];
-    let availableQueues = [];
-
-    // Checkbox dropdown instances (per tab)
-    const dd = {
-      agent: { remove:null, add:null, change:null },
-      skill: { remove:null, add:null, change:null },
-      team:  { remove:null, add:null, change:null },
-      managementUnit: { remove:null, add:null, change:null },
-      queue: { remove:null, add:null, change:null }
+    let accessToken = null;
+    let allUsers = [];
+    let usersById = {};
+    let allTeams = [];
+    let activityCodesByBuId = {};
+    let businessUnits = [];
+    
+    // Data storage for exports
+    let currentScheduleData = [];
+    let currentOvertimeData = [];
+    let currentAbsenceData = [];
+    
+    // Checkbox dropdown instances
+    const dropdowns = {
+      team: null,
+      user: null,
+      overtimeTeam: null,
+      absenceTeam: null
     };
 
-    // ===== OAUTH BOOT =====
+    // ===== Tab Management =====
+    function initializeTabs() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs and contents
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add('active');
+          const tabId = tab.getAttribute('data-tab');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+      });
+    }
+
+    // ===== Auth bootstrap =====
     document.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      token = params.get('access_token');
-      if (token) {
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('appContent').style.display = 'block';
-        initializeApp();
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const qparams = new URLSearchParams(window.location.search);
+
+      const oauthError = params.get('error') || qparams.get('error');
+      const oauthErrorDesc = params.get('error_description') || qparams.get('error_description');
+
+      if (oauthError) {
+        const msg = document.getElementById('auth-message');
+        msg.textContent = `OAuth error: ${oauthErrorDesc || oauthError}`;
+        msg.className = 'error-message';
+        console.error('OAuth error details:', { error: oauthError, description: oauthErrorDesc });
+        return;
+      }
+
+      accessToken = params.get('access_token');
+
+      if (accessToken) {
+        sessionStorage.setItem('purecloud_token', accessToken);
+        window.location.hash = '';
+        initializeApplication();
+      } else if (sessionStorage.getItem('purecloud_token')) {
+        accessToken = sessionStorage.getItem('purecloud_token');
+        initializeApplication();
       } else {
         window.location.href = oauthUrl;
       }
     });
 
-    function showMessage(message, type='error'){
+    function showMessage(msg, type = 'error') {
       const box = document.getElementById('messageContainer');
-      box.innerHTML = `<div class="${type}-message">${message}</div>`;
+      box.innerHTML = `<div class="${type}-message">${msg}</div>`;
       box.style.display = 'block';
-      if (type === 'success') setTimeout(()=> box.style.display = 'none', 5000);
-    }
-    function authHeaders(){ return { "Authorization":`Bearer ${token}`, "Content-Type":"application/json" }; }
-    async function safeJson(res){ try{ return await res.json(); } catch{ return null; } }
-    const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
-
-    // ===== INIT =====
-    async function initializeApp(){
-      try {
-        await Promise.all([
-          fetchAllUsers(), 
-          fetchAllTeams(), 
-          fetchAllSkills(), 
-          fetchAllManagementUnits(),
-          fetchAllQueues()
-        ]);
-        createAllDropdowns();
-        populateDropdowns();
-        setupEventListeners();
-      } catch (e) {
-        console.error(e);
-        showMessage('Error initializing application. Please try again.');
-        setTimeout(()=> window.location.href = oauthUrl, 3000);
+      if (type === 'success' || type === 'info') {
+        setTimeout(() => { box.style.display = 'none'; }, 6000);
       }
     }
 
-    // ===== DATA =====
-    async function fetchAllUsers(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/users?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch users');
-        const data = await res.json();
-        all = all.concat(data.entities || []);
-        total = data.total || 0; page++;
-      } while (all.length < total);
-      availableUsers = all;
-    }
-    async function fetchAllTeams(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/teams?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch teams');
-        const data = await res.json();
-        all = all.concat(data.entities || []);
-        total = data.total || 0; page++;
-      } while (all.length < total);
-      availableTeams = all;
-    }
-    async function fetchAllSkills(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/routing/skills?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch skills');
-        const data = await res.json();
-        all = all.concat(data.entities || []);
-        total = data.total || 0; page++;
-      } while (all.length < total);
-      availableSkills = all;
-    }
-    async function fetchAllManagementUnits(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch management units');
-        const data = await res.json();
-        all = all.concat(data.entities || []);
-        total = data.total || 0; page++;
-      } while (all.length < total);
-      availableManagementUnits = all;
-    }
-    async function fetchAllQueues(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || 'Failed to fetch queues');
-        const data = await res.json();
-        all = all.concat(data.entities || []);
-        total = data.total || 0; page++;
-      } while (all.length < total);
-      availableQueues = all;
+    function initializeApplication() {
+      document.getElementById('auth-message').textContent = 'Authenticated successfully!';
+      document.getElementById('authCard').style.display = 'none';
+      document.getElementById('appContent').style.display = 'block';
+
+      initializeTabs();
+      initializeScheduleApp();
+      initializeAnalytics();
+      initializeExportButtons();
+      initializeDropdowns();
     }
 
-    // ===== GENERIC CHECKBOX DROPDOWN =====
+    function authorizedFetch(url, options = {}) {
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      };
+      return fetch(url, { ...options, headers });
+    }
+
+    async function authorizedFetchJson(url, options = {}) {
+      const response = await authorizedFetch(url, options);
+      if (!response.ok) {
+        throw new Error(`Error calling ${url}: ${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    }
+
+    async function fetchAllPages(url) {
+      let allItems = [];
+      let pageNumber = 1;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
+        const response = await authorizedFetch(`${url}?pageNumber=${pageNumber}&pageSize=100`);
+        if (!response.ok) {
+          throw new Error(`Error fetching data: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        allItems = allItems.concat(data.entities || []);
+        if (data.pageCount && data.pageCount > pageNumber) {
+          pageNumber++;
+        } else {
+          hasMorePages = false;
+        }
+      }
+      return allItems;
+    }
+
+    // ===== Checkbox Dropdown Implementation =====
     function createCheckboxDropdown(containerId, { placeholder, searchPlaceholder }){
       const root = document.getElementById(containerId);
       root.innerHTML = '';
@@ -455,530 +602,1319 @@
       return { setOptions, getSelectedValues };
     }
 
-    function createAllDropdowns(){
-      // Agents
-      dd.agent.remove = createCheckboxDropdown('agentDropdownRemove', { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
-      dd.agent.add    = createCheckboxDropdown('agentDropdownAdd',    { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
-      dd.agent.change = createCheckboxDropdown('agentDropdownChange', { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
-      // Skills
-      dd.skill.remove = createCheckboxDropdown('skillDropdownRemove', { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
-      dd.skill.add    = createCheckboxDropdown('skillDropdownAdd',    { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
-      dd.skill.change = createCheckboxDropdown('skillDropdownChange', { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
-      // Teams
-      dd.team.remove  = createCheckboxDropdown('teamDropdownRemove',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
-      dd.team.add     = createCheckboxDropdown('teamDropdownAdd',     { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
-      dd.team.change  = createCheckboxDropdown('teamDropdownChange',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
-      // Management Units
-      dd.managementUnit.remove = createCheckboxDropdown('managementUnitDropdownRemove', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
-      dd.managementUnit.add    = createCheckboxDropdown('managementUnitDropdownAdd',    { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
-      dd.managementUnit.change = createCheckboxDropdown('managementUnitDropdownChange', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
-      // Queues
-      dd.queue.remove = createCheckboxDropdown('queueDropdownRemove', { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
-      dd.queue.add    = createCheckboxDropdown('queueDropdownAdd',    { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
-      dd.queue.change = createCheckboxDropdown('queueDropdownChange', { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
+    function initializeDropdowns() {
+      // Create checkbox dropdowns
+      dropdowns.team = createCheckboxDropdown('teamDropdown', { 
+        placeholder: 'Select teams', 
+        searchPlaceholder: 'Search teams...' 
+      });
+      
+      dropdowns.user = createCheckboxDropdown('userDropdown', { 
+        placeholder: 'Select users', 
+        searchPlaceholder: 'Search users...' 
+      });
+      
+      dropdowns.overtimeTeam = createCheckboxDropdown('overtimeTeamDropdown', { 
+        placeholder: 'Select teams', 
+        searchPlaceholder: 'Search teams...' 
+      });
+      
+      dropdowns.absenceTeam = createCheckboxDropdown('absenceTeamDropdown', { 
+        placeholder: 'Select teams', 
+        searchPlaceholder: 'Search teams...' 
+      });
     }
 
-    // ===== POPULATE =====
-    function populateDropdowns(){
-      // Agents
-      const validAgents = availableUsers
+    // ===== Schedule View Functions =====
+    async function initializeScheduleApp() {
+      document.getElementById('loadScheduleBtn').addEventListener('click', loadSchedule);
+      document.getElementById('businessUnitSelect').addEventListener('change', handleBusinessUnitChange);
+      document.getElementById('managementUnitSelect').addEventListener('change', handleManagementUnitChange);
+
+      try {
+        await Promise.all([populateInitialData()]);
+        showMessage('Initial data loaded – set your filters and hit "Load Schedule".', 'info');
+      } catch (err) {
+        console.error('Error initialising app:', err);
+        showMessage(`Error loading initial data: ${err.message}`, 'error');
+      }
+    }
+
+    async function populateInitialData() {
+      const [users, businessUnitsResponse, teams] = await Promise.all([
+        fetchAllPages(`${apiBase}/api/v2/users`),
+        authorizedFetchJson(`${apiBase}/api/v2/workforcemanagement/businessunits`),
+        fetchAllPages(`${apiBase}/api/v2/teams`)
+      ]);
+
+      allUsers = (users || []).filter(u => !u.deleted);
+      usersById = {};
+      allUsers.forEach(u => { usersById[u.id] = u; });
+      businessUnits = businessUnitsResponse.entities || businessUnitsResponse.businessUnits || businessUnitsResponse || [];
+      allTeams = teams || [];
+
+      populateUserDropdown(allUsers);
+      populateBusinessUnitSelect(businessUnits);
+      populateTeamDropdown(allTeams);
+      
+      // Also populate analytics dropdowns
+      populateAnalyticsDropdowns();
+    }
+
+    function populateUserDropdown(users) {
+      const validUsers = users
         .filter(u => u.name && u.name.trim() && u.name !== 'Unknown User')
         .map(u => ({ value: u.id, label: u.name || u.email || 'Unknown User' }))
         .sort((a,b)=>a.label.localeCompare(b.label));
-      dd.agent.remove.setOptions(validAgents);
-      dd.agent.add.setOptions(validAgents);
-      dd.agent.change.setOptions(validAgents);
+      
+      dropdowns.user.setOptions(validUsers);
+    }
 
-      // Skills
-      const skillOpts = (availableSkills||[])
-        .map(s => ({ value: s.id, label: s.name }))
-        .sort((a,b)=>a.label.localeCompare(b.label));
-      dd.skill.remove.setOptions(skillOpts);
-      dd.skill.add.setOptions(skillOpts);
-      dd.skill.change.setOptions(skillOpts);
+    function populateBusinessUnitSelect(businessUnits) {
+      const buSelect = document.getElementById('businessUnitSelect');
+      buSelect.innerHTML = '<option value="">Select business unit</option>';
+      businessUnits.forEach(bu => {
+        const opt = document.createElement('option');
+        opt.value = bu.id;
+        opt.text = bu.name || bu.id;
+        buSelect.add(opt);
+      });
+    }
 
-      // Teams
-      const teamOpts = (availableTeams||[])
+    function populateTeamDropdown(teams) {
+      const teamOpts = (teams||[])
         .map(t => ({ value: t.id, label: t.name }))
         .sort((a,b)=>a.label.localeCompare(b.label));
-      dd.team.remove.setOptions(teamOpts);
-      dd.team.add.setOptions(teamOpts);
-      dd.team.change.setOptions(teamOpts);
-
-      // Management Units
-      const managementUnitOpts = (availableManagementUnits||[])
-        .map(mu => ({ value: mu.id, label: mu.name }))
-        .sort((a,b)=>a.label.localeCompare(b.label));
-      dd.managementUnit.remove.setOptions(managementUnitOpts);
-      dd.managementUnit.add.setOptions(managementUnitOpts);
-      dd.managementUnit.change.setOptions(managementUnitOpts);
-
-      // Queues
-      const queueOpts = (availableQueues||[])
-        .map(q => ({ value: q.id, label: q.name }))
-        .sort((a,b)=>a.label.localeCompare(b.label));
-      dd.queue.remove.setOptions(queueOpts);
-      dd.queue.add.setOptions(queueOpts);
-      dd.queue.change.setOptions(queueOpts);
+      
+      dropdowns.team.setOptions(teamOpts);
+      dropdowns.overtimeTeam.setOptions(teamOpts);
+      dropdowns.absenceTeam.setOptions(teamOpts);
     }
 
-    // ===== EVENTS =====
-    function setupEventListeners(){
-      document.querySelectorAll('.tab').forEach(tab=>{
-        tab.addEventListener('click', ()=>{
-          document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-          tab.classList.add('active');
-          document.getElementById(tab.dataset.tab+'Tab').classList.add('active');
+    // ===== Analytics Functions =====
+    function populateAnalyticsDropdowns() {
+      // Populate business unit dropdowns for analytics
+      populateSelect('overtimeBuSelect', businessUnits);
+      populateSelect('absenceBuSelect', businessUnits);
+      
+      // Set default dates for analytics
+      const today = new Date();
+      const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+      document.getElementById('overtimeStartDate').value = twoWeeksAgo.toISOString().split('T')[0];
+      document.getElementById('overtimeEndDate').value = today.toISOString().split('T')[0];
+      document.getElementById('absenceStartDate').value = twoWeeksAgo.toISOString().split('T')[0];
+      document.getElementById('absenceEndDate').value = today.toISOString().split('T')[0];
+    }
+
+    function populateSelect(selectId, items) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = '<option value="">Select business unit</option>';
+      
+      const sorted = [...items].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      sorted.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.text = item.name || item.id;
+        select.add(opt);
+      });
+    }
+
+    function initializeAnalytics() {
+      // Overtime analysis
+      document.getElementById('analyzeOvertimeBtn').addEventListener('click', analyzeOvertime);
+      document.getElementById('overtimeBuSelect').addEventListener('change', (e) => handleAnalyticsBuChange(e, 'overtime'));
+      
+      // Absence analysis
+      document.getElementById('analyzeAbsenceBtn').addEventListener('click', analyzeAbsence);
+      document.getElementById('absenceBuSelect').addEventListener('change', (e) => handleAnalyticsBuChange(e, 'absence'));
+    }
+
+    async function handleAnalyticsBuChange(event, tabType) {
+      const buId = event.target.value;
+      const muSelect = document.getElementById(`${tabType}MuSelect`);
+      muSelect.innerHTML = '<option value="">Select management unit</option>';
+      muSelect.disabled = true;
+
+      if (!buId) return;
+
+      try {
+        const muResponse = await authorizedFetchJson(
+          `${apiBase}/api/v2/workforcemanagement/managementunits?businessUnitId=${encodeURIComponent(buId)}`
+        );
+        const list = muResponse.entities || muResponse.managementUnits || [];
+        list.forEach(mu => {
+          const opt = document.createElement('option');
+          opt.value = mu.id;
+          opt.text = mu.name || mu.id;
+          muSelect.add(opt);
         });
-      });
-
-      document.getElementById('fetchUsersRemove').addEventListener('click', ()=> fetchUsers('remove'));
-      document.getElementById('fetchUsersAdd').addEventListener('click', ()=> fetchUsers('add'));
-      document.getElementById('fetchUsersChange').addEventListener('click', ()=> fetchUsers('change'));
-
-      document.getElementById('selectAllUsersRemove').addEventListener('change', function(){
-        document.querySelectorAll('#userSkillsTableRemove tbody input[type="checkbox"]').forEach(cb=>cb.checked=this.checked);
-        updateRemoveButtonState();
-      });
-      document.getElementById('selectAllUsersAdd').addEventListener('change', function(){
-        document.querySelectorAll('#userSkillsTableAdd tbody input[type="checkbox"]').forEach(cb=>cb.checked=this.checked);
-        updateAddButtonState();
-      });
-      document.getElementById('selectAllUsersChange').addEventListener('change', function(){
-        document.querySelectorAll('#userSkillsTableChange tbody input[type="checkbox"]').forEach(cb=>cb.checked=this.checked);
-        updateChangeButtonState();
-      });
-
-      document.getElementById('removeSkills').addEventListener('click', ()=> removeSelectedSkills());
-      document.getElementById('addSkills').addEventListener('click',    ()=> addSelectedSkills());
-      document.getElementById('updateProficiency').addEventListener('click', ()=> updateSelectedProficiency());
+        muSelect.disabled = false;
+      } catch (err) {
+        console.error('Error loading management units:', err);
+        showMessage(`Error loading management units: ${err.message}`, 'error');
+      }
     }
 
-    function getSelectedAgentIds(mode){ return dd.agent[mode].getSelectedValues(); }
-    function getSelectedSkillIds(mode){ return dd.skill[mode].getSelectedValues(); }
-    function getSelectedTeamIds(mode){  return dd.team[mode].getSelectedValues();  }
-    function getSelectedManagementUnitIds(mode){  return dd.managementUnit[mode].getSelectedValues();  }
-    function getSelectedQueueIds(mode){  return dd.queue[mode].getSelectedValues();  }
+    // ===== Overtime Analysis =====
+    async function analyzeOvertime() {
+      const buId = document.getElementById('overtimeBuSelect').value;
+      const muId = document.getElementById('overtimeMuSelect').value;
+      const teamIds = dropdowns.overtimeTeam.getSelectedValues();
+      const startDate = document.getElementById('overtimeStartDate').value;
+      const endDate = document.getElementById('overtimeEndDate').value;
 
-    // ===== FETCH USERS + SKILLS =====
-    async function fetchUsers(mode){
-      const agentIds = getSelectedAgentIds(mode);
-      const teamIds  = getSelectedTeamIds(mode);
-      const skillIds = getSelectedSkillIds(mode);
-      const managementUnitIds = getSelectedManagementUnitIds(mode);
-      const queueIds = getSelectedQueueIds(mode);
-
-      if (agentIds.length === 0 && teamIds.length === 0 && skillIds.length === 0 && managementUnitIds.length === 0 && queueIds.length === 0){
-        showMessage('Please select at least one search option.');
+      if (!buId || !muId || !startDate || !endDate) {
+        showMessage('Please select business unit, management unit, and date range', 'error');
         return;
       }
 
-      const tbody = document.querySelector(`#userSkillsTable${cap(mode)} tbody`);
-      tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading users...</td></tr>';
+      const button = document.getElementById('analyzeOvertimeBtn');
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Analyzing...';
 
-      // Build candidate users
+      try {
+        // Load activity codes first
+        await loadActivityCodes(buId);
+        
+        // Get users based on filters
+        let users = await getUsersForAnalytics(muId, teamIds);
+        
+        const overtimeData = [];
+        const startDateIso = `${startDate}T00:00:00.000Z`;
+        const endDateIso = `${endDate}T00:00:00.000Z`;
+
+        console.log(`Analyzing overtime for ${users.length} users from ${startDate} to ${endDate}`);
+
+        // Analyze each user's schedule for overtime activities
+        for (const user of users) {
+          try {
+            console.log(`Checking user: ${user.name}`);
+            const schedule = await searchSchedules(muId, user.id, startDateIso, endDateIso, true);
+            const userOvertime = extractOvertimeActivities(schedule, user.id, buId);
+            
+            if (userOvertime.totalHours > 0) {
+              console.log(`Found overtime for ${user.name}: ${userOvertime.totalHours}h`);
+              overtimeData.push({
+                user: user.name,
+                totalHours: userOvertime.totalHours,
+                rate1Hours: userOvertime.rate1Hours,
+                rate1_5Hours: userOvertime.rate1_5Hours,
+                rate2Hours: userOvertime.rate2Hours,
+                activities: userOvertime.activities
+              });
+            } else {
+              console.log(`No overtime found for ${user.name}`);
+            }
+          } catch (err) {
+            console.error(`Error analyzing user ${user.name}:`, err);
+          }
+        }
+
+        console.log(`Overtime analysis complete. Found ${overtimeData.length} users with overtime`);
+        currentOvertimeData = overtimeData; // Store for export
+        renderOvertimeResults(overtimeData, startDate, endDate);
+      } catch (err) {
+        console.error('Error analyzing overtime:', err);
+        showMessage(`Error analyzing overtime: ${err.message}`, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    }
+
+    function extractOvertimeActivities(schedule, userId, businessUnitId) {
+      const activities = extractUserActivitiesFromSearchResult(schedule, userId, businessUnitId);
+      let totalHours = 0;
+      let rate1Hours = 0;
+      let rate1_5Hours = 0;
+      let rate2Hours = 0;
+      const overtimeActivities = [];
+      
+      console.log(`Analyzing ${activities.length} activities for overtime for user ${userId}`);
+      
+      activities.forEach(activity => {
+        const activityName = getActivityName(businessUnitId, activity.activityCodeId);
+        const activityCategory = getActivityCategory(businessUnitId, activity.activityCodeId);
+        
+        console.log(`Activity: "${activityName}", Category: "${activityCategory}", Duration: ${activity.durationMinutes}min`);
+        
+        // Check if it's overtime based on name or category
+        const isOvertime = activityName.toLowerCase().includes('overtime') || 
+                          activityCategory.toLowerCase().includes('overtime') ||
+                          // Fallback: check if it's outside normal hours or has specific patterns
+                          activityName.toLowerCase().includes('ot') ||
+                          // Include any activity that might be overtime based on timing
+                          (activity.countsAsPaidTime && isPotentialOvertime(activity));
+        
+        if (isOvertime) {
+          const hours = activity.durationMinutes / 60;
+          totalHours += hours;
+          
+          // Determine rate based on activity name
+          let rate = '1.0';
+          if (activityName.toLowerCase().includes('1.5') || activityName.toLowerCase().includes('timehalf')) {
+            rate = '1.5';
+            rate1_5Hours += hours;
+          } else if (activityName.toLowerCase().includes('2.0') || activityName.toLowerCase().includes('double')) {
+            rate = '2.0';
+            rate2Hours += hours;
+          } else {
+            rate1Hours += hours;
+          }
+          
+          // Store activity details - ONLY overtime activities
+          overtimeActivities.push({
+            date: activity.date,
+            activity: activityName,
+            startTime: formatTime(activity.start),
+            endTime: formatTime(activity.end),
+            duration: formatDuration(activity.durationMinutes),
+            hours: hours.toFixed(1),
+            rate: rate,
+            activityCodeId: activity.activityCodeId,
+            category: activityCategory
+          });
+          
+          console.log(`✓ Counted as overtime: ${activityName} (${hours}h, Rate: ${rate}, Category: ${activityCategory})`);
+        }
+      });
+      
+      console.log(`Total overtime: ${totalHours}h (1.0: ${rate1Hours}h, 1.5: ${rate1_5Hours}h, 2.0: ${rate2Hours}h)`);
+      
+      return {
+        totalHours: parseFloat(totalHours.toFixed(1)),
+        rate1Hours: parseFloat(rate1Hours.toFixed(1)),
+        rate1_5Hours: parseFloat(rate1_5Hours.toFixed(1)),
+        rate2Hours: parseFloat(rate2Hours.toFixed(1)),
+        activities: overtimeActivities
+      };
+    }
+
+    // Helper function to identify potential overtime based on timing
+    function isPotentialOvertime(activity) {
+      // Check if activity is outside normal business hours (e.g., evening, weekend)
+      if (activity.start) {
+        const start = new Date(activity.start);
+        const hour = start.getHours();
+        const day = start.getDay(); // 0 = Sunday, 6 = Saturday
+        
+        // Evening hours (after 6 PM) or weekend
+        if (hour >= 18 || day === 0 || day === 6) {
+          return true;
+        }
+        
+        // Early morning (before 6 AM)
+        if (hour < 6) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // ===== Absence Analysis =====
+    async function analyzeAbsence() {
+      const buId = document.getElementById('absenceBuSelect').value;
+      const muId = document.getElementById('absenceMuSelect').value;
+      const teamIds = dropdowns.absenceTeam.getSelectedValues();
+      const startDate = document.getElementById('absenceStartDate').value;
+      const endDate = document.getElementById('absenceEndDate').value;
+      const thresholdHours = parseFloat(document.getElementById('absenceThreshold').value) || 16;
+
+      if (!buId || !muId || !startDate || !endDate) {
+        showMessage('Please select business unit, management unit, and date range', 'error');
+        return;
+      }
+
+      const button = document.getElementById('analyzeAbsenceBtn');
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Analyzing...';
+
+      try {
+        // Load activity codes for absence types
+        await loadActivityCodes(buId);
+        
+        let users = await getUsersForAnalytics(muId, teamIds);
+        const absenceData = [];
+        const startDateIso = `${startDate}T00:00:00.000Z`;
+        const endDateIso = `${endDate}T00:00:00.000Z`;
+
+        for (const user of users) {
+          try {
+            const schedule = await searchSchedules(muId, user.id, startDateIso, endDateIso, true);
+            const absenceStats = calculateAbsenceStats(schedule, user.id, buId);
+            
+            if (absenceStats.totalHours > 0) {
+              absenceData.push({
+                user: user.name,
+                totalHours: absenceStats.totalHours,
+                absenceDays: absenceStats.days,
+                instances: absenceStats.instances,
+                exceedsThreshold: absenceStats.totalHours >= thresholdHours,
+                absenceDetails: absenceStats.details
+              });
+            }
+          } catch (err) {
+            console.error(`Error analyzing user ${user.name}:`, err);
+          }
+        }
+
+        currentAbsenceData = absenceData; // Store for export
+        renderAbsenceResults(absenceData, thresholdHours, startDate, endDate);
+      } catch (err) {
+        console.error('Error analyzing absence:', err);
+        showMessage(`Error analyzing absence: ${err.message}`, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    }
+
+    // ===== Helper Functions =====
+    async function getUsersForAnalytics(muId, teamIds) {
       let users = [];
-      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
-
-      if (agentIds.length){
-        users = agentIds.map(id => validUsers.find(u=>u.id===id)).filter(Boolean);
-      } else if (teamIds.length){
-        const teamMembersArrays = await Promise.all(teamIds.map(tid => usersFromTeam(tid)));
-        const map = new Map();
-        teamMembersArrays.flat().forEach(u => map.set(u.id, u));
-        users = Array.from(map.values());
-      } else if (managementUnitIds.length){
-        const managementUnitUsersArrays = await Promise.all(managementUnitIds.map(muid => usersFromManagementUnit(muid)));
-        const map = new Map();
-        managementUnitUsersArrays.flat().forEach(u => map.set(u.id, u));
-        users = Array.from(map.values());
-      } else if (queueIds.length){
-        const queueMembersArrays = await Promise.all(queueIds.map(qid => usersFromQueue(qid)));
-        const map = new Map();
-        queueMembersArrays.flat().forEach(u => map.set(u.id, u));
-        users = Array.from(map.values());
-      } else if (skillIds.length){
-        users = validUsers; // we'll filter after fetching their skills
-      }
-
-      if (!users.length){ showMessage('No users found for the selected criteria.'); return; }
-
-      const usersWithSkills = await Promise.all(users.map(async user=>{
-        const skills = await fetchUserSkills(user.id);
-        return { user, skills };
-      }));
-
-      // Filter by selected skills:
-      if (skillIds.length){
-        const hasAny = (skills)=> skills.some(s => skillIds.includes(s.id));
-        const hasAll = (skills)=> skillIds.every(id => skills.some(s=>s.id===id));
-        if (mode==='remove' || mode==='change'){
-          // Keep users who have ANY of the selected skills
-          filtered = usersWithSkills.filter(({skills})=> hasAny(skills));
-        } else {
-          // add: keep users who are missing AT LEAST one selected skill
-          filtered = usersWithSkills.filter(({skills})=> !hasAll(skills));
-        }
+      
+      // Handle team selection
+      if (teamIds && teamIds.length > 0) {
+        const teamMembersArrays = await Promise.all(
+          teamIds.map(teamId => getTeamMembers(teamId))
+        );
+        users = teamMembersArrays.flat();
       } else {
-        filtered = usersWithSkills;
+        // Get all users from management unit
+        const muUsersResponse = await authorizedFetchJson(
+          `${apiBase}/api/v2/workforcemanagement/managementunits/${encodeURIComponent(muId)}/users`
+        );
+        users = muUsersResponse.entities || muUsersResponse.users || [];
       }
-
-      if (mode==='remove') populateRemoveTable(filtered);
-      else if (mode==='add') populateAddTable(filtered, skillIds);
-      else populateChangeTable(filtered, skillIds);
-    }
-
-    async function usersFromTeam(teamId){
-      const res = await fetch(`https://api.mypurecloud.ie/api/v2/teams/${teamId}/members`, { headers: authHeaders() });
-      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch team ${teamId} members`);
-      const data = await res.json();
-      const members = data.entities || [];
-      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
-      return members.map(m => validUsers.find(u=>u.id===m.id)).filter(Boolean);
-    }
-
-    async function usersFromManagementUnit(managementUnitId){
-      let allUsers = [], page=1, size=100, total=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits/${managementUnitId}/users?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch management unit ${managementUnitId} users`);
-        const data = await res.json();
-        allUsers = allUsers.concat(data.entities || []);
-        total = data.total || 0; page++;
-      } while (allUsers.length < total);
       
-      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
-      return allUsers.map(muUser => validUsers.find(u=>u.id===muUser.id)).filter(Boolean);
+      return users.map(uRef => usersById[uRef.id] || uRef).filter(u => u && u.name);
     }
 
-    async function usersFromQueue(queueId){
-      let allMembers = [], page=1, size=100, totalMembers=0;
-      do{
-        const res = await fetch(`https://api.mypurecloud.ie/api/v2/routing/queues/${queueId}/members?pageNumber=${page}&pageSize=${size}`, { headers: authHeaders() });
-        if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to fetch members for queue ${queueId}`);
-        const data = await res.json();
-        allMembers = allMembers.concat(data.entities || []);
-        totalMembers = data.total || 0; page++;
-      } while (allMembers.length < totalMembers);
-      
-      const validUsers = availableUsers.filter(u => u.name && u.name.trim() && u.name!=='Unknown User');
-      return allMembers.map(member => {
-        const userId = member.user?.id;
-        return userId ? validUsers.find(u=>u.id===userId) : null;
-      }).filter(Boolean);
-    }
-
-    async function fetchUserSkills(userId){
-      const url = `https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`;
-      try{
-        const res = await fetch(url, { headers: authHeaders() });
-        if (!res.ok){
-          if (res.status===404) return [];
-          console.warn(`Failed to fetch skills for ${userId}:`, res.status);
-          return [];
-        }
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data.entities || []);
-        return (list||[]).map(s => ({
-          id: s.id,
-          name: s.name || (availableSkills.find(as=>as.id===s.id)?.name) || 'Unknown Skill',
-          proficiency: (typeof s.proficiency==='number') ? s.proficiency : null
-        }));
-      } catch(e){
-        console.error(`Error fetching skills for ${userId}:`, e);
+    async function getTeamMembers(teamId) {
+      try {
+        const teamMembersResponse = await authorizedFetchJson(
+          `${apiBase}/api/v2/teams/${encodeURIComponent(teamId)}/members`
+        );
+        return teamMembersResponse.entities || teamMembersResponse.members || [];
+      } catch (err) {
+        console.error(`Error fetching team members for team ${teamId}:`, err);
         return [];
       }
     }
 
-    // ===== TABLES =====
-    function populateRemoveTable(rows){
-      const tbody = document.querySelector('#userSkillsTableRemove tbody');
-      tbody.innerHTML='';
-      if (!rows.length){ tbody.innerHTML='<tr><td colspan="4">No users found.</td></tr>'; updateRemoveButtonState(); return; }
-
-      rows.forEach(({user, skills})=>{
-        const assignedText = skills.length
-          ? skills.map(s=> `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}`).join(', ')
-          : 'No Skills';
-        const options = skills.length
-          ? ['<option value="">Select Skill to Remove</option>', ...skills.map(s=> `<option value="${s.id}">${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}</option>`)].join('')
-          : '<option value="">No Skills Assigned</option>';
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-remove"></td>
-          <td>${user.name}</td>
-          <td>${assignedText}</td>
-          <td><select data-user-id="${user.id}" class="skill-select-remove" ${skills.length?'':'disabled'}>${options}</select></td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.querySelectorAll('.user-checkbox-remove').forEach(cb=>cb.addEventListener('change', updateRemoveButtonState));
-      document.querySelectorAll('.skill-select-remove').forEach(sel=>sel.addEventListener('change', updateRemoveButtonState));
-      updateRemoveButtonState();
-    }
-
-    function populateAddTable(rows, selectedSkillIds=[]){
-      const tbody = document.querySelector('#userSkillsTableAdd tbody');
-      tbody.innerHTML='';
-      if (!rows.length){ tbody.innerHTML='<tr><td colspan="4">No users found.</td></tr>'; updateAddButtonState(); return; }
-
-      rows.forEach(({user, skills})=>{
-        const assignedIds = skills.map(s=>s.id);
-        const choices = availableSkills.filter(s => !assignedIds.includes(s.id));
-        // Preselect the first selected-skill that user doesn't have, else blank
-        const preselect = selectedSkillIds.find(id => choices.some(c=>c.id===id)) || '';
-
-        const options = choices.length
-          ? ['<option value="">Select Skill to Add</option>', ...choices.map(s=> `<option value="${s.id}" ${s.id===preselect?'selected':''}>${s.name}</option>`)].join('')
-          : '<option value="">All Skills Assigned</option>';
-
-        const assignedText = skills.length
-          ? skills.map(s=> `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}`).join(', ')
-          : 'No Skills';
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-add"></td>
-          <td>${user.name}</td>
-          <td>${assignedText}</td>
-          <td>
-            <div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;align-items:center;">
-              <select data-user-id="${user.id}" class="skill-select-add" ${choices.length?'':'disabled'}>${options}</select>
-              <div class="prof-wrap">
-                <button type="button" class="tiny-btn" data-act="dec" data-user-id="${user.id}">−</button>
-                <input type="number" step="0.5" min="1" max="5" value="3.0" class="prof-input" data-user-id="${user.id}" ${choices.length?'':'disabled'} />
-                <button type="button" class="tiny-btn" data-act="inc" data-user-id="${user.id}">+</button>
-              </div>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.querySelectorAll('.user-checkbox-add').forEach(cb=>cb.addEventListener('change', updateAddButtonState));
-      document.querySelectorAll('.skill-select-add').forEach(sel=>sel.addEventListener('change', updateAddButtonState));
-      document.querySelectorAll('.prof-input').forEach(inp=>{
-        inp.addEventListener('input', ()=>{ normalizeProf(inp); updateAddButtonState(); });
-        inp.addEventListener('blur',  ()=>{ normalizeProf(inp,true); updateAddButtonState(); });
-      });
-      document.querySelectorAll('[data-act="inc"]').forEach(btn=>btn.addEventListener('click', ()=>{
-        const inp = document.querySelector(`.prof-input[data-user-id="${btn.dataset.userId}"]`);
-        nudgeProf(inp, +0.5); updateAddButtonState();
-      }));
-      document.querySelectorAll('[data-act="dec"]').forEach(btn=>btn.addEventListener('click', ()=>{
-        const inp = document.querySelector(`.prof-input[data-user-id="${btn.dataset.userId}"]`);
-        nudgeProf(inp, -0.5); updateAddButtonState();
-      }));
-      updateAddButtonState();
-    }
-
-    function populateChangeTable(rows, selectedSkillIds=[]){
-      const tbody = document.querySelector('#userSkillsTableChange tbody');
-      tbody.innerHTML='';
-      if (!rows.length){ tbody.innerHTML='<tr><td colspan="4">No users found.</td></tr>'; updateChangeButtonState(); return; }
-
-      rows.forEach(({user, skills})=>{
-        const assignedText = skills.length
-          ? skills.map(s=> `${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}`).join(', ')
-          : 'No Skills';
-
-        // Default selection: first of selectedSkillIds that the user has; else first skill
-        let selectedSkill = skills[0] || null;
-        if (selectedSkillIds.length){
-          const match = skills.find(s => selectedSkillIds.includes(s.id));
-          if (match) selectedSkill = match;
+    function calculateAbsenceStats(schedule, userId, businessUnitId) {
+      const activities = extractUserActivitiesFromSearchResult(schedule, userId, businessUnitId);
+      let totalHours = 0;
+      const absenceDays = new Set();
+      let instances = 0;
+      const absenceDetails = [];
+      
+      console.log('Analyzing activities for absence:', activities);
+      
+      activities.forEach(activity => {
+        const activityName = getActivityName(businessUnitId, activity.activityCodeId);
+        const activityCategory = getActivityCategory(businessUnitId, activity.activityCodeId);
+        
+        console.log(`Activity: ${activityName}, Category: ${activityCategory}, Code: ${activity.activityCodeId}, Duration: ${activity.durationMinutes}min`);
+        
+        // Check if it's absence based on category or name
+        const isAbsence = activity.type === 'fullDayOff' || 
+                         activityCategory === 'TimeOff' ||
+                         activityName.includes('Time Off') || 
+                         activityName.includes('Sick') || 
+                         activityName.includes('Absence') || 
+                         activityName.includes('Vacation') ||
+                         activityName.includes('Holiday') ||
+                         activityName.includes('Leave');
+        
+        if (isAbsence) {
+          totalHours += activity.durationMinutes / 60;
+          absenceDays.add(activity.date);
+          instances++;
+          
+          // Store details for each absence
+          absenceDetails.push({
+            date: activity.date,
+            type: activityName,
+            duration: formatDuration(activity.durationMinutes),
+            hours: (activity.durationMinutes / 60).toFixed(1)
+          });
+          
+          console.log(`✓ Counted as absence: ${activityName} (${activity.durationMinutes/60}h, Category: ${activityCategory})`);
         }
-        const initialProf = selectedSkill && typeof selectedSkill.proficiency==='number' ? selectedSkill.proficiency : 3.0;
-
-        const options = skills.map(s=> `
-          <option value="${s.id}" data-prof="${s.proficiency!=null?s.proficiency:''}" ${selectedSkill && selectedSkill.id===s.id?'selected':''}>
-            ${s.name}${s.proficiency!=null?` (${s.proficiency.toFixed(1)})`:''}
-          </option>`).join('');
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="checkbox" data-user-id="${user.id}" class="user-checkbox-change" ${skills.length?'':'disabled'}></td>
-          <td>${user.name}</td>
-          <td>${assignedText}</td>
-          <td>
-            ${
-              skills.length
-                ? `<div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;align-items:center;">
-                     <select data-user-id="${user.id}" class="skill-select-change">${options}</select>
-                     <div class="prof-wrap">
-                       <button type="button" class="tiny-btn" data-act="dec-change" data-user-id="${user.id}">−</button>
-                       <input type="number" step="0.5" min="1" max="5" value="${initialProf.toFixed(1)}" class="prof-input-change" data-user-id="${user.id}"/>
-                       <button type="button" class="tiny-btn" data-act="inc-change" data-user-id="${user.id}">+</button>
-                     </div>
-                   </div>`
-                : `<span class="muted">No direct skills to change</span>`
-            }
-          </td>
-        `;
-        tbody.appendChild(tr);
       });
+      
+      console.log(`Total absence: ${totalHours}h over ${absenceDays.size} days, ${instances} instances`);
+      
+      return {
+        totalHours: parseFloat(totalHours.toFixed(1)),
+        days: absenceDays.size,
+        instances: instances,
+        details: absenceDetails
+      };
+    }
 
-      document.querySelectorAll('.skill-select-change').forEach(sel=>{
-        sel.addEventListener('change', ()=>{
-          const uid = sel.getAttribute('data-user-id');
-          const prof = parseFloat(sel.selectedOptions[0]?.dataset?.prof ?? '3.0');
-          const inp = document.querySelector(`.prof-input-change[data-user-id="${uid}"]`);
-          if (inp) inp.value = clampProf(prof).toFixed(1);
-          updateChangeButtonState();
+    // ===== Rendering Functions =====
+    function renderOvertimeResults(data, startDate, endDate) {
+      const container = document.getElementById('overtimeResults');
+      container.style.display = 'block';
+      
+      if (data.length === 0) {
+        // Show debug information when no overtime is found
+        container.innerHTML = `
+          <div class="info-message">
+            No overtime activities found for the selected period.
+            <br><br>
+            <details>
+              <summary>Debug Information</summary>
+              <div style="margin-top: 10px;">
+                <strong>Common reasons:</strong>
+                <ul>
+                  <li>No activities with "overtime" in the name were found</li>
+                  <li>Activity codes may use different naming conventions</li>
+                  <li>Check that your activity codes include "Overtime" in their names</li>
+                  <li>Verify the date range covers periods when overtime was scheduled</li>
+                </ul>
+                <br>
+                <strong>Expected activity code names:</strong>
+                <ul>
+                  <li>Overtime 1.0</li>
+                  <li>Overtime 1.5</li>
+                  <li>Overtime 2.0</li>
+                  <li>Or any activity containing "overtime"</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sort by total overtime hours (descending)
+      data.sort((a, b) => b.totalHours - a.totalHours);
+      
+      // Calculate overall metrics
+      const totalOvertime = data.reduce((sum, item) => sum + item.totalHours, 0);
+      const totalRate1 = data.reduce((sum, item) => sum + item.rate1Hours, 0);
+      const totalRate1_5 = data.reduce((sum, item) => sum + item.rate1_5Hours, 0);
+      const totalRate2 = data.reduce((sum, item) => sum + item.rate2Hours, 0);
+      
+      let html = `
+        <h3 class="section-title">Overtime Report</h3>
+        <div class="schedule-meta">
+          <span class="pill">Period: ${startDate} to ${endDate}</span>
+          &nbsp;
+          <span class="pill">Total Agents: ${data.length}</span>
+        </div>
+        
+        <!-- Overtime Metrics -->
+        <div class="overtime-metrics">
+          <div class="overtime-metric-card">
+            <div class="metric-label">Month</div>
+            <div class="metric-value">${getCurrentMonth()}</div>
+          </div>
+          <div class="overtime-metric-card">
+            <div class="metric-label">Total Overtime</div>
+            <div class="metric-value">${totalOvertime.toFixed(1)}h</div>
+          </div>
+          <div class="overtime-metric-card">
+            <div class="metric-label">1.0 Rate</div>
+            <div class="metric-value">${totalRate1.toFixed(1)}h</div>
+          </div>
+          <div class="overtime-metric-card">
+            <div class="metric-label">1.5 Rate</div>
+            <div class="metric-value">${totalRate1_5.toFixed(1)}h</div>
+          </div>
+          <div class="overtime-metric-card">
+            <div class="metric-label">2.0 Rate</div>
+            <div class="metric-value">${totalRate2.toFixed(1)}h</div>
+          </div>
+        </div>
+        
+        <!-- Subtabs for Summary and Details -->
+        <div class="subtabs">
+          <div class="subtab active" data-subtab="summary">Summary</div>
+          <div class="subtab" data-subtab="details">Details</div>
+        </div>
+        
+        <!-- Summary View -->
+        <div id="overtime-summary" class="subtab-content active">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Total Overtime</th>
+                <th>1.0 Rate</th>
+                <th>1.5 Rate</th>
+                <th>2.0 Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      data.forEach(item => {
+        html += `
+          <tr>
+            <td>${escapeHtml(item.user)}</td>
+            <td><strong>${item.totalHours.toFixed(1)}h</strong></td>
+            <td>${item.rate1Hours.toFixed(1)}h</td>
+            <td>${item.rate1_5Hours.toFixed(1)}h</td>
+            <td>${item.rate2Hours.toFixed(1)}h</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Details View -->
+        <div id="overtime-details" class="subtab-content">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Date</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Duration</th>
+                <th>Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      data.forEach(item => {
+        item.activities.forEach(activity => {
+          html += `
+            <tr>
+              <td>${escapeHtml(item.user)}</td>
+              <td>${activity.date}</td>
+              <td>${activity.startTime}</td>
+              <td>${activity.endTime}</td>
+              <td>${activity.duration}</td>
+              <td>${activity.rate}</td>
+            </tr>
+          `;
         });
       });
-      document.querySelectorAll('.prof-input-change').forEach(inp=>{
-        inp.addEventListener('input', ()=>{ normalizeProf(inp); updateChangeButtonState(); });
-        inp.addEventListener('blur',  ()=>{ normalizeProf(inp,true); updateChangeButtonState(); });
+      
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+      container.innerHTML = html;
+      
+      // Initialize subtabs
+      initializeSubtabs();
+    }
+
+    function renderAbsenceResults(data, thresholdHours, startDate, endDate) {
+      const container = document.getElementById('absenceResults');
+      container.style.display = 'block';
+      
+      if (data.length === 0) {
+        container.innerHTML = `<div class="info-message">No absence recorded for the selected period.</div>`;
+        return;
+      }
+      
+      // Sort by absence hours (descending)
+      data.sort((a, b) => b.totalHours - a.totalHours);
+      
+      let html = `
+        <h3 class="section-title">Absence Analytics</h3>
+        <div class="schedule-meta">
+          <span class="pill">Period: ${startDate} to ${endDate}</span>
+          &nbsp;
+          <span class="pill">Alert Threshold: ${thresholdHours} hours</span>
+          &nbsp;
+          <span class="pill">Total Agents: ${data.length}</span>
+        </div>
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Total Absence Hours</th>
+              <th>Absence Days</th>
+              <th>Instances</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      data.forEach(item => {
+        const rowClass = item.exceedsThreshold ? 'warning-row' : '';
+        const status = item.exceedsThreshold ? 
+          `<span class="absence-badge">Above Threshold</span>` : 
+          '<span style="color: var(--success-text)">Within Limits</span>';
+        
+        html += `
+          <tr class="${rowClass}">
+            <td>${escapeHtml(item.user)}</td>
+            <td><strong>${item.totalHours}h</strong></td>
+            <td>${item.absenceDays}</td>
+            <td>${item.instances}</td>
+            <td>${status}</td>
+          </tr>
+        `;
+        
+        // Add absence details
+        if (item.absenceDetails && item.absenceDetails.length > 0) {
+          html += `
+            <tr>
+              <td colspan="5">
+                <div class="absence-details">
+                  <strong>Absence Details:</strong>
+                  ${item.absenceDetails.map(detail => `
+                    <div class="absence-day">
+                      <span class="absence-date">${detail.date} - ${detail.type}</span>
+                      <span class="absence-duration">${detail.duration} (${detail.hours}h)</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </td>
+            </tr>
+          `;
+        }
       });
-      document.querySelectorAll('[data-act="inc-change"]').forEach(btn=>btn.addEventListener('click', ()=>{
-        const inp = document.querySelector(`.prof-input-change[data-user-id="${btn.dataset.userId}"]`);
-        nudgeProf(inp, +0.5); updateChangeButtonState();
+      
+      html += `</tbody></table>`;
+      
+      // Add simple chart visualization
+      html += `
+        <div class="chart-container">
+          <h4>Absence Distribution</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px;">
+      `;
+      
+      // Top 5 absence cases for chart
+      const topCases = data.slice(0, 5);
+      topCases.forEach(item => {
+        const percentage = (item.totalHours / Math.max(...data.map(d => d.totalHours))) * 100;
+        html += `
+          <div class="metric-card">
+            <div class="metric-label">${escapeHtml(item.user)}</div>
+            <div class="metric-value">${item.totalHours}h</div>
+            <div style="background: #e5e7eb; height: 8px; border-radius: 4px; margin-top: 8px;">
+              <div style="background: var(--primary-color); height: 100%; width: ${percentage}%; border-radius: 4px;"></div>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `</div></div>`;
+      container.innerHTML = html;
+    }
+
+    function initializeSubtabs() {
+      document.querySelectorAll('.subtab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all subtabs and contents
+          document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked subtab and corresponding content
+          tab.classList.add('active');
+          const subtabId = tab.getAttribute('data-subtab');
+          document.getElementById(`overtime-${subtabId}`).classList.add('active');
+        });
+      });
+    }
+
+    function getCurrentMonth() {
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const now = new Date();
+      return months[now.getMonth()];
+    }
+
+    // ===== Export Functions =====
+    function initializeExportButtons() {
+      // Schedule export
+      document.getElementById('exportScheduleBtn').addEventListener('click', exportScheduleToCSV);
+      
+      // Overtime exports
+      document.getElementById('exportOvertimeSummaryBtn').addEventListener('click', exportOvertimeSummaryToCSV);
+      document.getElementById('exportOvertimeDetailsBtn').addEventListener('click', exportOvertimeDetailsToCSV);
+      
+      // Absence export
+      document.getElementById('exportAbsenceBtn').addEventListener('click', exportAbsenceToCSV);
+    }
+
+    function exportToCSV(data, filename) {
+      if (!data || data.length === 0) {
+        showMessage('No data to export', 'error');
+        return;
+      }
+
+      // Convert data to CSV
+      const headers = Object.keys(data[0]);
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            const value = row[header] || '';
+            // Handle values that might contain commas or quotes
+            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportScheduleToCSV() {
+      if (currentScheduleData.length === 0) {
+        showMessage('No schedule data to export', 'error');
+        return;
+      }
+
+      const csvData = currentScheduleData.map(activity => ({
+        Date: activity.date,
+        Activity: activity.activityLabel,
+        Start: formatTime(activity.start),
+        End: formatTime(activity.end),
+        Duration: formatDuration(activity.durationMinutes)
       }));
-      document.querySelectorAll('[data-act="dec-change"]').forEach(btn=>btn.addEventListener('click', ()=>{
-        const inp = document.querySelector(`.prof-input-change[data-user-id="${btn.dataset.userId}"]`);
-        nudgeProf(inp, -0.5); updateChangeButtonState();
+
+      exportToCSV(csvData, `schedule_${new Date().toISOString().split('T')[0]}.csv`);
+    }
+
+    function exportOvertimeSummaryToCSV() {
+      if (currentOvertimeData.length === 0) {
+        showMessage('No overtime data to export', 'error');
+        return;
+      }
+
+      const csvData = currentOvertimeData.map(item => ({
+        Agent: item.user,
+        'Total Overtime Hours': item.totalHours,
+        '1.0 Rate Hours': item.rate1Hours,
+        '1.5 Rate Hours': item.rate1_5Hours,
+        '2.0 Rate Hours': item.rate2Hours
       }));
-      document.querySelectorAll('.user-checkbox-change').forEach(cb=>cb.addEventListener('change', updateChangeButtonState));
-      updateChangeButtonState();
+
+      exportToCSV(csvData, `overtime_summary_${new Date().toISOString().split('T')[0]}.csv`);
     }
 
-    // ===== BUTTON STATES =====
-    function updateRemoveButtonState(){
-      const btn = document.getElementById('removeSkills');
-      const checked = [...document.querySelectorAll('.user-checkbox-remove:checked')];
-      let ok=false;
-      checked.forEach(cb=>{
-        const uid = cb.getAttribute('data-user-id');
-        const sel = document.querySelector(`.skill-select-remove[data-user-id="${uid}"]`);
-        if (sel && sel.value) ok=true;
+    function exportOvertimeDetailsToCSV() {
+      if (currentOvertimeData.length === 0) {
+        showMessage('No overtime data to export', 'error');
+        return;
+      }
+
+      const csvData = [];
+      currentOvertimeData.forEach(item => {
+        item.activities.forEach(activity => {
+          csvData.push({
+            Agent: item.user,
+            Date: activity.date,
+            'Start Time': activity.startTime,
+            'End Time': activity.endTime,
+            Duration: activity.duration,
+            'Overtime Type': activity.activity,
+            Rate: activity.rate,
+            Hours: activity.hours
+          });
+        });
       });
-      btn.disabled = !(checked.length>0 && ok);
+
+      exportToCSV(csvData, `overtime_details_${new Date().toISOString().split('T')[0]}.csv`);
     }
-    function updateAddButtonState(){
-      const btn = document.getElementById('addSkills');
-      const checked = [...document.querySelectorAll('.user-checkbox-add:checked')];
-      let ok = checked.length>0;
-      checked.forEach(cb=>{
-        const uid = cb.getAttribute('data-user-id');
-        const sel = document.querySelector(`.skill-select-add[data-user-id="${uid}"]`);
-        const inp = document.querySelector(`.prof-input[data-user-id="${uid}"]`);
-        if (!sel || !sel.value) ok=false;
-        if (!inp || !validProf(inp.value)) ok=false;
+
+    function exportAbsenceToCSV() {
+      if (currentAbsenceData.length === 0) {
+        showMessage('No absence data to export', 'error');
+        return;
+      }
+
+      const csvData = [];
+      currentAbsenceData.forEach(item => {
+        // Add summary row
+        csvData.push({
+          Agent: item.user,
+          'Total Absence Hours': item.totalHours,
+          'Absence Days': item.absenceDays,
+          Instances: item.instances,
+          Status: item.exceedsThreshold ? 'Above Threshold' : 'Within Limits',
+          Date: '',
+          'Absence Type': '',
+          Duration: '',
+          Hours: ''
+        });
+
+        // Add detail rows
+        item.absenceDetails.forEach(detail => {
+          csvData.push({
+            Agent: '',
+            'Total Absence Hours': '',
+            'Absence Days': '',
+            Instances: '',
+            Status: '',
+            Date: detail.date,
+            'Absence Type': detail.type,
+            Duration: detail.duration,
+            Hours: detail.hours
+          });
+        });
       });
-      btn.disabled = !ok;
+
+      exportToCSV(csvData, `absence_${new Date().toISOString().split('T')[0]}.csv`);
     }
-    function updateChangeButtonState(){
-      const btn = document.getElementById('updateProficiency');
-      const checked = [...document.querySelectorAll('.user-checkbox-change:checked')];
-      let ok = checked.length>0;
-      checked.forEach(cb=>{
-        const uid = cb.getAttribute('data-user-id');
-        const sel = document.querySelector(`.skill-select-change[data-user-id="${uid}"]`);
-        const inp = document.querySelector(`.prof-input-change[data-user-id="${uid}"]`);
-        if (!sel || !sel.value) ok=false;
-        if (!inp || !validProf(inp.value)) ok=false;
+
+    // ===== Existing Schedule Functions =====
+    async function handleBusinessUnitChange() {
+      const buId = document.getElementById('businessUnitSelect').value;
+      const muSelect = document.getElementById('managementUnitSelect');
+      muSelect.innerHTML = '<option value="">Select management unit</option>';
+      muSelect.disabled = true;
+
+      if (!buId) return;
+
+      try {
+        // Load activity codes for this business unit
+        await loadActivityCodes(buId);
+        
+        const muResponse = await authorizedFetchJson(
+          `${apiBase}/api/v2/workforcemanagement/managementunits?businessUnitId=${encodeURIComponent(buId)}`
+        );
+        const list = muResponse.entities || muResponse.managementUnits || [];
+        list.forEach(mu => {
+          const opt = document.createElement('option');
+          opt.value = mu.id;
+          opt.text = mu.name || mu.id;
+          muSelect.add(opt);
+        });
+        muSelect.disabled = false;
+      } catch (err) {
+        console.error('Error loading management units:', err);
+        showMessage(`Error loading management units: ${err.message}`, 'error');
+      }
+    }
+
+    // ===== Fixed function to load activity codes from business unit =====
+    async function loadActivityCodes(businessUnitId) {
+      try {
+        console.log(`Loading activity codes for business unit: ${businessUnitId}`);
+        const activityCodesResponse = await authorizedFetchJson(
+          `${apiBase}/api/v2/workforcemanagement/businessunits/${encodeURIComponent(businessUnitId)}/activitycodes`
+        );
+        
+        console.log('Full activity codes API response:', activityCodesResponse);
+        
+        let activityCodes = [];
+        
+        // Try different response structures
+        if (activityCodesResponse.activityCodes && typeof activityCodesResponse.activityCodes === 'object') {
+          console.log('Found activityCodes object, converting to array...');
+          activityCodes = Object.values(activityCodesResponse.activityCodes);
+        } else if (Array.isArray(activityCodesResponse.entities)) {
+          console.log('Found entities array');
+          activityCodes = activityCodesResponse.entities;
+        } else if (Array.isArray(activityCodesResponse)) {
+          console.log('Response is array');
+          activityCodes = activityCodesResponse;
+        } else {
+          console.log('Unknown response structure, trying to extract any arrays...');
+          // Try to find any array in the response
+          for (const key in activityCodesResponse) {
+            if (Array.isArray(activityCodesResponse[key])) {
+              activityCodes = activityCodesResponse[key];
+              console.log(`Found array in key: ${key}`);
+              break;
+            }
+          }
+        }
+        
+        console.log(`Loaded ${activityCodes.length} activity codes:`, activityCodes);
+        
+        // Create a lookup map by ID - now storing both name and category
+        const activityCodeMap = {};
+        activityCodes.forEach(code => {
+          if (code && code.id) {
+            activityCodeMap[code.id] = {
+              name: code.name ? code.name.trim() : code.id,
+              category: code.category || 'Unknown'
+            };
+            console.log(`Mapped: ${code.id} -> "${code.name}" (Category: ${code.category})`);
+          } else {
+            console.log('Skipping invalid activity code:', code);
+          }
+        });
+        
+        // Cache the activity codes for this business unit
+        activityCodesByBuId[businessUnitId] = activityCodeMap;
+        
+        console.log('Final activity code map:', activityCodeMap);
+        return activityCodeMap;
+      } catch (err) {
+        console.error('Error loading activity codes:', err);
+        // Return empty map but don't fail completely
+        activityCodesByBuId[businessUnitId] = {};
+        return {};
+      }
+    }
+
+    // ===== Function to get activity name from code =====
+    function getActivityName(businessUnitId, activityCodeId) {
+      if (!businessUnitId || !activityCodeId) return 'Unknown Activity';
+      
+      // Default system activity codes - hardcoded
+      const systemCodes = {
+        '0': 'On Queue',
+        '1': 'Break', 
+        '2': 'Meal',
+        '3': 'Meeting',
+        '4': 'Off Queue',
+        '5': 'Time Off',
+        '6': 'Training',
+        '7': 'Agent Unavailable'
+      };
+      
+      // First check if it's a system code
+      if (systemCodes[activityCodeId]) {
+        return systemCodes[activityCodeId];
+      }
+      
+      // If it's a UUID, check business unit activity codes
+      const activityCodes = activityCodesByBuId[businessUnitId];
+      
+      if (activityCodes && activityCodes[activityCodeId]) {
+        return activityCodes[activityCodeId].name;
+      }
+      
+      // Return the code ID if not found anywhere
+      return activityCodeId;
+    }
+
+    // ===== Function to get activity category =====
+    function getActivityCategory(businessUnitId, activityCodeId) {
+      if (!businessUnitId || !activityCodeId) return 'Unknown';
+      
+      // System code categories
+      const systemCodeCategories = {
+        '0': 'OnQueueWork',
+        '1': 'Break', 
+        '2': 'Meal',
+        '3': 'Meeting',
+        '4': 'OffQueueWork',
+        '5': 'TimeOff',
+        '6': 'Training',
+        '7': 'Unavailable'
+      };
+      
+      // First check if it's a system code
+      if (systemCodeCategories[activityCodeId]) {
+        return systemCodeCategories[activityCodeId];
+      }
+      
+      // If it's a UUID, check business unit activity codes
+      const activityCodes = activityCodesByBuId[businessUnitId];
+      
+      if (activityCodes && activityCodes[activityCodeId]) {
+        return activityCodes[activityCodeId].category;
+      }
+      
+      return 'Unknown';
+    }
+
+    async function handleManagementUnitChange() {
+      const muId = document.getElementById('managementUnitSelect').value;
+      if (!muId) {
+        populateUserDropdown(allUsers);
+        return;
+      }
+
+      try {
+        const muUsersResponse = await authorizedFetchJson(
+          `${apiBase}/api/v2/workforcemanagement/managementunits/${encodeURIComponent(muId)}/users`
+        );
+        const list = muUsersResponse.entities || muUsersResponse.users || [];
+        const enriched = list.map(uRef => usersById[uRef.id] || uRef);
+        populateUserDropdown(enriched);
+      } catch (err) {
+        console.error('Error loading MU users:', err);
+        showMessage(`Error loading management unit users: ${err.message}`, 'error');
+      }
+    }
+
+    // ===== Main schedule search using MU schedules/search =====
+    async function loadSchedule() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '';
+
+      const buId = document.getElementById('businessUnitSelect').value;
+      const muId = document.getElementById('managementUnitSelect').value;
+      const userIds = dropdowns.user.getSelectedValues();
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!buId) {
+        resultsDiv.innerHTML = `<div class="error-message">Please select a business unit.</div>`;
+        return;
+      }
+      if (!muId) {
+        resultsDiv.innerHTML = `<div class="error-message">Please select a management unit.</div>`;
+        return;
+      }
+      if (userIds.length === 0) {
+        resultsDiv.innerHTML = `<div class="error-message">Please select at least one user.</div>`;
+        return;
+      }
+      if (!startDate || !endDate) {
+        resultsDiv.innerHTML = `<div class="error-message">Please select both a start and end date.</div>`;
+        return;
+      }
+      if (endDate < startDate) {
+        resultsDiv.innerHTML = `<div class="error-message">End date must be on or after the start date.</div>`;
+        return;
+      }
+
+      const button = document.getElementById('loadScheduleBtn');
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Loading schedule...';
+
+      const startDateIso = `${startDate}T00:00:00.000Z`;
+      const endDateIso = `${endDate}T00:00:00.000Z`;
+
+      try {
+        // Get schedules for all selected users
+        let allActivities = [];
+        for (const userId of userIds) {
+          try {
+            const searchResult = await searchSchedules(muId, userId, startDateIso, endDateIso, true);
+            console.log('Raw WFM search result:', searchResult);
+            const activities = extractUserActivitiesFromSearchResult(searchResult, userId, buId);
+            console.log(`Extracted ${activities.length} activities for user ${userId}`);
+            allActivities = allActivities.concat(activities);
+          } catch (err) {
+            console.error(`Error loading schedule for user ${userId}:`, err);
+          }
+        }
+        
+        currentScheduleData = allActivities; // Store for export
+        renderScheduleResults(resultsDiv, allActivities, userIds, startDateIso, endDateIso);
+      } catch (err) {
+        console.error('Error loading schedule:', err);
+        resultsDiv.innerHTML = `<div class="error-message">Error loading schedule: ${err.message}</div>`;
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    }
+
+    async function searchSchedules(managementUnitId, userId, startDateIso, endDateIso, loadFullWeeks) {
+      const body = {
+        userIds: [userId],
+        startDate: startDateIso,
+        endDate: endDateIso,
+        loadFullWeeks: loadFullWeeks
+      };
+
+      const url = `${apiBase}/api/v2/workforcemanagement/managementunits/${encodeURIComponent(managementUnitId)}/schedules/search`;
+
+      return authorizedFetchJson(url, {
+        method: 'POST',
+        body: JSON.stringify(body)
       });
-      btn.disabled = !ok;
     }
 
-    // ===== ACTIONS =====
-    async function removeSelectedSkills(){
-      const ops = [];
-      document.querySelectorAll('.user-checkbox-remove:checked').forEach(cb=>{
-        const uid = cb.getAttribute('data-user-id');
-        const sel = document.querySelector(`.skill-select-remove[data-user-id="${uid}"]`);
-        if (sel && sel.value) ops.push({ userId: uid, skillId: sel.value });
+    // ===== Fixed function to extract activities from search result =====
+    function extractUserActivitiesFromSearchResult(response, userId, businessUnitId) {
+      console.log('Full response structure:', response);
+      
+      let userSchedule = null;
+
+      // Handle the nested structure from your sample data
+      if (response && response.userSchedules) {
+        // Your data structure: userSchedules is an object keyed by userId
+        if (response.userSchedules[userId]) {
+          userSchedule = response.userSchedules[userId];
+        } else {
+          // Fallback: take the first user schedule if userId doesn't match key
+          const firstUserId = Object.keys(response.userSchedules)[0];
+          userSchedule = response.userSchedules[firstUserId];
+        }
+      }
+
+      const rows = [];
+
+      // If we found a user schedule, extract shifts and full day time off markers
+      if (userSchedule) {
+        // Process shifts (regular scheduled activities)
+        const shifts = Array.isArray(userSchedule.shifts) ? userSchedule.shifts : [];
+        console.log(`Found ${shifts.length} shifts for user`, shifts);
+
+        shifts.forEach(shift => {
+          const shiftStartDate = shift.startDate ? new Date(shift.startDate) : null;
+          const shiftDateStr = shiftStartDate ? shiftStartDate.toISOString().slice(0, 10) : null;
+          
+          const activities = Array.isArray(shift.activities) ? shift.activities : [];
+          console.log(`Shift ${shift.id} has ${activities.length} activities`, activities);
+
+          activities.forEach(activity => {
+            const startIso = activity.startDate;
+            const lengthMin = activity.lengthInMinutes;
+
+            if (!startIso || lengthMin == null) {
+              console.warn('Skipping activity missing startDate or lengthInMinutes:', activity);
+              return;
+            }
+
+            const start = new Date(startIso);
+            const end = new Date(start.getTime() + lengthMin * 60000);
+
+            // Use the API-based activity name lookup
+            const activityLabel = getActivityName(businessUnitId, activity.activityCodeId);
+
+            const dateStr = shiftDateStr || start.toISOString().slice(0, 10);
+
+            rows.push({
+              date: dateStr,
+              start,
+              end,
+              durationMinutes: lengthMin,
+              activityLabel,
+              countsAsPaidTime: activity.countsAsPaidTime,
+              activityCodeId: activity.activityCodeId,
+              type: 'shift',
+              userId: userId,
+              userName: usersById[userId]?.name || userId
+            });
+          });
+        });
+
+        // Process full day time off markers (like Sick days)
+        const fullDayTimeOffMarkers = Array.isArray(userSchedule.fullDayTimeOffMarkers) ? userSchedule.fullDayTimeOffMarkers : [];
+        console.log(`Found ${fullDayTimeOffMarkers.length} full day time off markers`, fullDayTimeOffMarkers);
+
+        fullDayTimeOffMarkers.forEach(marker => {
+          const dateStr = marker.managementUnitDate;
+          const lengthMin = marker.lengthInMinutes || 480; // Default to 8 hours if not specified
+          
+          if (!dateStr) {
+            console.warn('Skipping marker missing managementUnitDate:', marker);
+            return;
+          }
+
+          // Use the API-based activity name lookup
+          const activityLabel = getActivityName(businessUnitId, marker.activityCodeId);
+
+          rows.push({
+            date: dateStr,
+            start: null, // No specific start time for full day off
+            end: null,   // No specific end time for full day off
+            durationMinutes: lengthMin,
+            activityLabel: activityLabel,
+            countsAsPaidTime: marker.isPaid !== false, // Default to true if not specified
+            activityCodeId: marker.activityCodeId,
+            type: 'fullDayOff',
+            userId: userId,
+            userName: usersById[userId]?.name || userId
+          });
+        });
+      }
+
+      rows.sort((a, b) => {
+        if (a.date === b.date) {
+          return (a.start || new Date(a.date)) - (b.start || new Date(b.date));
+        }
+        return a.date.localeCompare(b.date);
       });
-      if (!ops.length){ showMessage('No valid operations to perform.'); return; }
 
-      const btn = document.getElementById('removeSkills');
-      try{
-        btn.disabled=true; btn.textContent='Processing...';
-        const results = await Promise.allSettled(ops.map(op => apiDeleteSkill(op.userId, op.skillId)));
-        const fails = results.filter(r=>r.status==='rejected');
-        if (fails.length) showMessage(`Completed with ${fails.length} error(s). Check console.`);
-        else showMessage('All skill removals completed successfully!','success');
-        await fetchUsers('remove');
-      } catch(e){ showMessage(`Failed to remove skills: ${e.message}`); }
-      finally{ btn.disabled=false; btn.textContent='Remove Selected Skills from Selected Users'; }
+      console.log(`Extracted ${rows.length} activities total (${rows.filter(r => r.type === 'shift').length} shifts + ${rows.filter(r => r.type === 'fullDayOff').length} full day off)`);
+      return rows;
     }
 
-    async function addSelectedSkills(){
-      const ops = [];
-      document.querySelectorAll('.user-checkbox-add:checked').forEach(cb=>{
-        const uid = cb.getAttribute('data-user-id');
-        const sel = document.querySelector(`.skill-select-add[data-user-id="${uid}"]`);
-        const inp = document.querySelector(`.prof-input[data-user-id="${uid}"]`);
-        if (sel && sel.value && validProf(inp.value)) ops.push({ userId: uid, id: sel.value, proficiency: clampProf(parseFloat(inp.value)) });
-      });
-      if (!ops.length){ showMessage('No valid operations to perform.'); return; }
-
-      const btn = document.getElementById('addSkills');
-      try{
-        btn.disabled=true; btn.textContent='Processing...';
-        const results = await Promise.allSettled(ops.map(op => apiPostSkill(op.userId, op.id, op.proficiency)));
-        const fails = results.filter(r=>r.status==='rejected');
-        if (fails.length) showMessage(`Completed with ${fails.length} error(s). Check console.`);
-        else showMessage('All skill additions completed successfully!','success');
-        await fetchUsers('add');
-      } catch(e){ showMessage(`Failed to add skills: ${e.message}`); }
-      finally{ btn.disabled=false; btn.textContent='Add Selected Skills to Selected Users'; }
+    function formatTime(d) {
+      if (!d) return 'All Day';
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    async function updateSelectedProficiency(){
-      const ops = [];
-      document.querySelectorAll('.user-checkbox-change:checked').forEach(cb=>{
-        const uid = cb.getAttribute('data-user-id');
-        const sel = document.querySelector(`.skill-select-change[data-user-id="${uid}"]`);
-        const inp = document.querySelector(`.prof-input-change[data-user-id="${uid}"]`);
-        if (sel && sel.value && validProf(inp.value)) ops.push({ userId: uid, id: sel.value, proficiency: clampProf(parseFloat(inp.value)) });
-      });
-      if (!ops.length){ showMessage('No valid operations to perform.'); return; }
-
-      const btn = document.getElementById('updateProficiency');
-      try{
-        btn.disabled=true; btn.textContent='Processing...';
-        const results = await Promise.allSettled(ops.map(op => apiPostSkill(op.userId, op.id, op.proficiency))); // POST updates proficiency
-        const fails = results.filter(r=>r.status==='rejected');
-        if (fails.length) showMessage(`Completed with ${fails.length} error(s). Check console.`);
-        else showMessage('Proficiency updated successfully!','success');
-        await fetchUsers('change');
-      } catch(e){ showMessage(`Failed to update proficiency: ${e.message}`); }
-      finally{ btn.disabled=false; btn.textContent='Update Proficiency for Selected'; }
+    function formatDuration(mins) {
+      if (mins == null || isNaN(mins)) return '';
+      const total = Math.max(0, Math.round(mins));
+      const h = Math.floor(total / 60);
+      const m = total % 60;
+      if (h === 0) return `${m}m`;
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}m`;
     }
 
-    // ===== API HELPERS =====
-    async function apiDeleteSkill(userId, skillId){
-      const res = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills/${skillId}`, { method:'DELETE', headers: authHeaders() });
-      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to remove skill`);
-      return true;
-    }
-    async function apiPostSkill(userId, skillId, proficiency){
-      const res = await fetch(`https://api.mypurecloud.ie/api/v2/users/${userId}/routingskills`, {
-        method:'POST', headers: authHeaders(), body: JSON.stringify({ id: skillId, proficiency: Number(proficiency) })
-      });
-      if (!res.ok) throw new Error((await safeJson(res))?.message || `Failed to set skill`);
-      return true;
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     }
 
-    // ===== PROF HELPERS =====
-    function normalizeProf(inp, snap=false){
-      let v = parseFloat(inp.value);
-      if (Number.isNaN(v)) { inp.value=''; return; }
-      if (snap) v = Math.round(v*2)/2;
-      v = Math.min(5, Math.max(1, v));
-      inp.value = v.toFixed(1);
+    function renderScheduleResults(container, activities, userIds, startDateIso, endDateIso) {
+      const startDateStr = startDateIso.slice(0, 10);
+      const endDateStr = endDateIso.slice(0, 10);
+
+      let html = `
+        <h2 class="section-title">Schedule for Selected Users</h2>
+        <div class="schedule-meta">
+          <span class="pill">From: ${escapeHtml(startDateStr)}</span>
+          &nbsp;
+          <span class="pill">To: ${escapeHtml(endDateStr)}</span>
+          &nbsp;
+          <span class="pill">Source: MU schedules/search</span>
+        </div>
+      `;
+
+      if (!activities.length) {
+        html += `<div class="info-message" style="margin-top:12px;">No activities found for selected users in the selected date range.</div>`;
+      } else {
+        html += `
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Date</th>
+                <th>Activity</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        activities.forEach(row => {
+          html += `
+            <tr>
+              <td>${escapeHtml(row.userName)}</td>
+              <td>${escapeHtml(row.date)}</td>
+              <td>${escapeHtml(row.activityLabel || '')}</td>
+              <td>${escapeHtml(formatTime(row.start))}</td>
+              <td>${escapeHtml(formatTime(row.end))}</td>
+              <td>${escapeHtml(formatDuration(row.durationMinutes))}</td>
+            </tr>
+          `;
+        });
+        html += `</tbody></table>`;
+      }
+
+      container.innerHTML = html;
     }
-    function nudgeProf(inp, delta){
-      let v = parseFloat(inp.value); if (Number.isNaN(v)) v = 3.0;
-      v = Math.round((v + delta)*2)/2; v = Math.min(5, Math.max(1, v));
-      inp.value = v.toFixed(1);
-    }
-    function validProf(v){ const n = parseFloat(v); return !Number.isNaN(n) && n>=1 && n<=5 && Math.abs(n*2 - Math.round(n*2)) < 1e-9; }
-    function clampProf(v){ return Math.min(5, Math.max(1, v)); }
   </script>
 </body>
 </html>

@@ -343,6 +343,12 @@
       queueIds: []
     };
 
+    // Store fetched user data globally
+    let currentFetchedData = {
+      usersWithSkills: [],
+      skillIds: []
+    };
+
     // Checkbox dropdown instances (per tab)
     const dd = {
       agent: { remove:null, add:null, change:null },
@@ -687,6 +693,23 @@
       dd.team[mode].setSelectedValues(sharedSelections.teamIds);
       dd.managementUnit[mode].setSelectedValues(sharedSelections.managementUnitIds);
       dd.queue[mode].setSelectedValues(sharedSelections.queueIds);
+      
+      // If we have fetched data, populate the table for the current tab
+      if (currentFetchedData.usersWithSkills.length > 0) {
+        populateTableForTab(mode);
+      }
+    }
+
+    function populateTableForTab(mode){
+      if (!currentFetchedData.usersWithSkills.length) return;
+      
+      if (mode === 'remove') {
+        populateRemoveTable(currentFetchedData.usersWithSkills);
+      } else if (mode === 'add') {
+        populateAddTable(currentFetchedData.usersWithSkills, currentFetchedData.skillIds);
+      } else if (mode === 'change') {
+        populateChangeTable(currentFetchedData.usersWithSkills, currentFetchedData.skillIds);
+      }
     }
 
     // ===== BULK CONTROLS =====
@@ -758,6 +781,7 @@
           showMessage(`Successfully removed ${bulkSkillIds.length} skill(s) from ${checkedBoxes.length} user(s).`, 'success');
         }
         
+        // Refresh all tables
         await fetchUsers('remove');
       } catch (e) {
         showMessage(`Failed to apply bulk removal: ${e.message}`);
@@ -808,6 +832,7 @@
           showMessage(`Successfully added ${bulkSkillIds.length} skill(s) to ${checkedBoxes.length} user(s).`, 'success');
         }
         
+        // Refresh all tables
         await fetchUsers('add');
       } catch (e) {
         showMessage(`Failed to apply bulk addition: ${e.message}`);
@@ -858,6 +883,7 @@
           showMessage(`Successfully changed ${bulkSkillIds.length} skill(s) for ${checkedBoxes.length} user(s).`, 'success');
         }
         
+        // Refresh all tables
         await fetchUsers('change');
       } catch (e) {
         showMessage(`Failed to apply bulk change: ${e.message}`);
@@ -984,9 +1010,16 @@
         filtered = usersWithSkills;
       }
 
-      if (mode==='remove') populateRemoveTable(filtered);
-      else if (mode==='add') populateAddTable(filtered, skillIds);
-      else populateChangeTable(filtered, skillIds);
+      // Store the fetched data globally
+      currentFetchedData = {
+        usersWithSkills: filtered,
+        skillIds: skillIds
+      };
+
+      // Populate all tables
+      populateRemoveTable(filtered);
+      populateAddTable(filtered, skillIds);
+      populateChangeTable(filtered, skillIds);
     }
 
     async function usersFromTeam(teamId){
@@ -1261,6 +1294,7 @@
         const fails = results.filter(r=>r.status==='rejected');
         if (fails.length) showMessage(`Completed with ${fails.length} error(s). Check console.`);
         else showMessage('All skill removals completed successfully!','success');
+        // Refresh all tables
         await fetchUsers('remove');
       } catch(e){ showMessage(`Failed to remove skills: ${e.message}`); }
       finally{ btn.disabled=false; btn.textContent='Remove Selected Skills from Selected Users'; }
@@ -1283,6 +1317,7 @@
         const fails = results.filter(r=>r.status==='rejected');
         if (fails.length) showMessage(`Completed with ${fails.length} error(s). Check console.`);
         else showMessage('All skill additions completed successfully!','success');
+        // Refresh all tables
         await fetchUsers('add');
       } catch(e){ showMessage(`Failed to add skills: ${e.message}`); }
       finally{ btn.disabled=false; btn.textContent='Add Selected Skills to Selected Users'; }
@@ -1305,6 +1340,7 @@
         const fails = results.filter(r=>r.status==='rejected');
         if (fails.length) showMessage(`Completed with ${fails.length} error(s). Check console.`);
         else showMessage('Proficiency updated successfully!','success');
+        // Refresh all tables
         await fetchUsers('change');
       } catch(e){ showMessage(`Failed to update proficiency: ${e.message}`); }
       finally{ btn.disabled=false; btn.textContent='Update Proficiency for Selected'; }

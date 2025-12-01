@@ -41,6 +41,9 @@
     .prof-wrap{display:flex;gap:8px;align-items:center;margin-top:6px}
     .prof-input,.prof-input-change{width:90px}
     .muted{color:var(--text-light);font-size:12px}
+    .bulk-section{background:#f8f9fa;padding:15px;border-radius:8px;border:1px solid #dee2e6;margin-bottom:20px;display:flex;gap:15px;align-items:flex-end;flex-wrap:wrap}
+    .bulk-section > div{min-width:250px;flex:1}
+    .bulk-section button{min-width:180px}
 
     /* Checkbox dropdown */
     .checkbox-dropdown{position:relative;min-width:220px;width:100%}
@@ -59,16 +62,29 @@
     .cd-item label{display:flex;align-items:center;gap:10px;cursor:pointer;width:100%}
     .cd-footer{padding:8px 12px;background:#fafafa;border-top:1px solid var(--border-color);font-size:12px;color:var(--text-light);display:flex;justify-content:space-between}
     
-    /* Responsive adjustments for the controls grid */
+    /* Responsive adjustments */
     @media (max-width: 1200px) {
       .controls {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .bulk-section > div {
+        min-width: 200px;
       }
     }
     
     @media (max-width: 768px) {
       .controls {
         grid-template-columns: 1fr;
+      }
+      .bulk-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .bulk-section > div {
+        min-width: 100%;
+      }
+      .bulk-section button {
+        min-width: 100%;
       }
     }
   </style>
@@ -92,7 +108,7 @@
       <div class="tab" data-tab="change">Change Proficiency</div>
     </div>
 
-    <!-- Remove -->
+    <!-- Remove Tab -->
     <div id="removeTab" class="tab-content active">
       <div class="selection-section">
         <h3>Search Options</h3>
@@ -126,6 +142,19 @@
       </div>
 
       <div class="card">
+        <div class="bulk-section">
+          <div>
+            <label>Apply to All Selected Users</label>
+            <select id="bulkSkillRemove" style="width:100%">
+              <option value="">Select Skill to Remove from All</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="applyBulkRemove" class="full-width-btn">Apply to Selected Users</button>
+          </div>
+        </div>
+        
         <h2 style="margin:0 0 12px;">Routing Skills — Remove</h2>
         <table id="userSkillsTableRemove">
           <thead>
@@ -141,7 +170,7 @@
       </div>
     </div>
 
-    <!-- Add -->
+    <!-- Add Tab -->
     <div id="addTab" class="tab-content">
       <div class="selection-section">
         <h3>Search Options</h3>
@@ -175,6 +204,27 @@
       </div>
 
       <div class="card">
+        <div class="bulk-section">
+          <div>
+            <label>Apply to All Selected Users</label>
+            <select id="bulkSkillAdd" style="width:100%">
+              <option value="">Select Skill to Add to All</option>
+            </select>
+          </div>
+          <div>
+            <label>Proficiency</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" class="tiny-btn" id="bulkProfDec">−</button>
+              <input type="number" step="0.5" min="1" max="5" value="3.0" id="bulkProfInput" style="flex:1" />
+              <button type="button" class="tiny-btn" id="bulkProfInc">+</button>
+            </div>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="applyBulkAdd" class="full-width-btn">Apply to Selected Users</button>
+          </div>
+        </div>
+        
         <h2 style="margin:0 0 12px;">Routing Skills — Add</h2>
         <table id="userSkillsTableAdd">
           <thead>
@@ -190,7 +240,7 @@
       </div>
     </div>
 
-    <!-- Change -->
+    <!-- Change Tab -->
     <div id="changeTab" class="tab-content">
       <div class="selection-section">
         <h3>Search Options</h3>
@@ -224,6 +274,27 @@
       </div>
 
       <div class="card">
+        <div class="bulk-section">
+          <div>
+            <label>Apply to All Selected Users</label>
+            <select id="bulkSkillChange" style="width:100%">
+              <option value="">Select Skill to Change for All</option>
+            </select>
+          </div>
+          <div>
+            <label>New Proficiency</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button type="button" class="tiny-btn" id="bulkProfChangeDec">−</button>
+              <input type="number" step="0.5" min="1" max="5" value="3.0" id="bulkProfChangeInput" style="flex:1" />
+              <button type="button" class="tiny-btn" id="bulkProfChangeInc">+</button>
+            </div>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="applyBulkChange" class="full-width-btn">Apply to Selected Users</button>
+          </div>
+        </div>
+        
         <h2 style="margin:0 0 12px;">Routing Skills — Change Proficiency</h2>
         <table id="userSkillsTableChange">
           <thead>
@@ -253,6 +324,15 @@
     let availableSkills = [];
     let availableManagementUnits = [];
     let availableQueues = [];
+
+    // Shared selections across tabs
+    const sharedSelections = {
+      agentIds: [],
+      skillIds: [],
+      teamIds: [],
+      managementUnitIds: [],
+      queueIds: []
+    };
 
     // Checkbox dropdown instances (per tab)
     const dd = {
@@ -299,6 +379,7 @@
         createAllDropdowns();
         populateDropdowns();
         setupEventListeners();
+        setupBulkControls();
       } catch (e) {
         console.error(e);
         showMessage('Error initializing application. Please try again.');
@@ -364,7 +445,7 @@
     }
 
     // ===== GENERIC CHECKBOX DROPDOWN =====
-    function createCheckboxDropdown(containerId, { placeholder, searchPlaceholder }){
+    function createCheckboxDropdown(containerId, { placeholder, searchPlaceholder }, mode){
       const root = document.getElementById(containerId);
       root.innerHTML = '';
 
@@ -399,7 +480,7 @@
       const selectAll = panel.querySelector('[data-cd="selectall"]');
       const summary = panel.querySelector('[data-cd="summary"]');
 
-      let options = []; // [{value, label}]
+      let options = [];
       let selected = new Set();
 
       function render(filter=''){
@@ -421,6 +502,7 @@
           cb.addEventListener('change', ()=>{
             if (cb.checked) selected.add(o.value); else selected.delete(o.value);
             updateSummary(); updateSelectAllState();
+            updateSharedSelections(containerId, Array.from(selected));
           });
           list.appendChild(row);
         });
@@ -438,44 +520,61 @@
       trigger.addEventListener('click', ()=>{ panel.classList.toggle('open'); search.focus(); });
       document.addEventListener('click', (e)=>{ if (!root.contains(e.target)) panel.classList.remove('open'); });
       search.addEventListener('input', ()=> render(search.value));
-      clearBtn.addEventListener('click', ()=>{ selected.clear(); render(search.value); updateSummary(); updateSelectAllState(); });
+      clearBtn.addEventListener('click', ()=>{ 
+        selected.clear(); 
+        render(search.value); 
+        updateSummary(); 
+        updateSelectAllState();
+        updateSharedSelections(containerId, []);
+      });
       selectAll.addEventListener('change', ()=>{
-        if (selectAll.checked) options.forEach(o=> selected.add(o.value)); else selected.clear();
-        render(search.value); updateSummary();
+        if (selectAll.checked) options.forEach(o=> selected.add(o.value)); 
+        else selected.clear();
+        render(search.value); 
+        updateSummary();
+        updateSharedSelections(containerId, Array.from(selected));
       });
 
       function setOptions(newOptions){
         options = newOptions || [];
         selected.forEach(v=>{ if (!options.some(o=>o.value===v)) selected.delete(v); });
-        render(search.value); updateSummary(); updateSelectAllState();
+        render(search.value); 
+        updateSummary(); 
+        updateSelectAllState();
       }
       function getSelectedValues(){ return Array.from(selected); }
+      function setSelectedValues(values){
+        selected = new Set(values);
+        render(search.value);
+        updateSummary();
+        updateSelectAllState();
+      }
 
       render('');
-      return { setOptions, getSelectedValues };
+      return { setOptions, getSelectedValues, setSelectedValues };
     }
 
     function createAllDropdowns(){
       // Agents
-      dd.agent.remove = createCheckboxDropdown('agentDropdownRemove', { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
-      dd.agent.add    = createCheckboxDropdown('agentDropdownAdd',    { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
-      dd.agent.change = createCheckboxDropdown('agentDropdownChange', { placeholder:'Select agents', searchPlaceholder:'Search agents...' });
+      dd.agent.remove = createCheckboxDropdown('agentDropdownRemove', { placeholder:'Select agents', searchPlaceholder:'Search agents...' }, 'remove');
+      dd.agent.add    = createCheckboxDropdown('agentDropdownAdd',    { placeholder:'Select agents', searchPlaceholder:'Search agents...' }, 'add');
+      dd.agent.change = createCheckboxDropdown('agentDropdownChange', { placeholder:'Select agents', searchPlaceholder:'Search agents...' }, 'change');
       // Skills
-      dd.skill.remove = createCheckboxDropdown('skillDropdownRemove', { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
-      dd.skill.add    = createCheckboxDropdown('skillDropdownAdd',    { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
-      dd.skill.change = createCheckboxDropdown('skillDropdownChange', { placeholder:'Select skills', searchPlaceholder:'Search skills...' });
+      dd.skill.remove = createCheckboxDropdown('skillDropdownRemove', { placeholder:'Select skills', searchPlaceholder:'Search skills...' }, 'remove');
+      dd.skill.add    = createCheckboxDropdown('skillDropdownAdd',    { placeholder:'Select skills', searchPlaceholder:'Search skills...' }, 'add');
+      dd.skill.change = createCheckboxDropdown('skillDropdownChange', { placeholder:'Select skills', searchPlaceholder:'Search skills...' }, 'change');
       // Teams
-      dd.team.remove  = createCheckboxDropdown('teamDropdownRemove',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
-      dd.team.add     = createCheckboxDropdown('teamDropdownAdd',     { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
-      dd.team.change  = createCheckboxDropdown('teamDropdownChange',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' });
+      dd.team.remove  = createCheckboxDropdown('teamDropdownRemove',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' }, 'remove');
+      dd.team.add     = createCheckboxDropdown('teamDropdownAdd',     { placeholder:'Select teams',  searchPlaceholder:'Search teams...' }, 'add');
+      dd.team.change  = createCheckboxDropdown('teamDropdownChange',  { placeholder:'Select teams',  searchPlaceholder:'Search teams...' }, 'change');
       // Management Units
-      dd.managementUnit.remove = createCheckboxDropdown('managementUnitDropdownRemove', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
-      dd.managementUnit.add    = createCheckboxDropdown('managementUnitDropdownAdd',    { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
-      dd.managementUnit.change = createCheckboxDropdown('managementUnitDropdownChange', { placeholder:'Select management units', searchPlaceholder:'Search management units...' });
+      dd.managementUnit.remove = createCheckboxDropdown('managementUnitDropdownRemove', { placeholder:'Select management units', searchPlaceholder:'Search management units...' }, 'remove');
+      dd.managementUnit.add    = createCheckboxDropdown('managementUnitDropdownAdd',    { placeholder:'Select management units', searchPlaceholder:'Search management units...' }, 'add');
+      dd.managementUnit.change = createCheckboxDropdown('managementUnitDropdownChange', { placeholder:'Select management units', searchPlaceholder:'Search management units...' }, 'change');
       // Queues
-      dd.queue.remove = createCheckboxDropdown('queueDropdownRemove', { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
-      dd.queue.add    = createCheckboxDropdown('queueDropdownAdd',    { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
-      dd.queue.change = createCheckboxDropdown('queueDropdownChange', { placeholder:'Select queues', searchPlaceholder:'Search queues...' });
+      dd.queue.remove = createCheckboxDropdown('queueDropdownRemove', { placeholder:'Select queues', searchPlaceholder:'Search queues...' }, 'remove');
+      dd.queue.add    = createCheckboxDropdown('queueDropdownAdd',    { placeholder:'Select queues', searchPlaceholder:'Search queues...' }, 'add');
+      dd.queue.change = createCheckboxDropdown('queueDropdownChange', { placeholder:'Select queues', searchPlaceholder:'Search queues...' }, 'change');
     }
 
     // ===== POPULATE =====
@@ -496,6 +595,9 @@
       dd.skill.remove.setOptions(skillOpts);
       dd.skill.add.setOptions(skillOpts);
       dd.skill.change.setOptions(skillOpts);
+
+      // Populate bulk dropdowns
+      populateBulkDropdowns();
 
       // Teams
       const teamOpts = (availableTeams||[])
@@ -522,6 +624,237 @@
       dd.queue.change.setOptions(queueOpts);
     }
 
+    function populateBulkDropdowns(){
+      const skillOpts = (availableSkills||[])
+        .map(s => ({ value: s.id, label: s.name }))
+        .sort((a,b)=>a.label.localeCompare(b.label));
+      
+      const bulkRemoveSelect = document.getElementById('bulkSkillRemove');
+      const bulkAddSelect = document.getElementById('bulkSkillAdd');
+      const bulkChangeSelect = document.getElementById('bulkSkillChange');
+      
+      bulkRemoveSelect.innerHTML = '<option value="">Select Skill to Remove from All</option>' + 
+        skillOpts.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+      
+      bulkAddSelect.innerHTML = '<option value="">Select Skill to Add to All</option>' + 
+        skillOpts.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+      
+      bulkChangeSelect.innerHTML = '<option value="">Select Skill to Change for All</option>' + 
+        skillOpts.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+    }
+
+    // ===== SHARED SELECTIONS =====
+    function updateSharedSelections(dropdownId, selectedValues){
+      if (dropdownId.includes('agentDropdown')) {
+        sharedSelections.agentIds = selectedValues;
+        // Update other agent dropdowns
+        if (!dropdownId.includes('Remove')) dd.agent.remove.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Add')) dd.agent.add.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Change')) dd.agent.change.setSelectedValues(selectedValues);
+      } else if (dropdownId.includes('skillDropdown')) {
+        sharedSelections.skillIds = selectedValues;
+        if (!dropdownId.includes('Remove')) dd.skill.remove.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Add')) dd.skill.add.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Change')) dd.skill.change.setSelectedValues(selectedValues);
+      } else if (dropdownId.includes('teamDropdown')) {
+        sharedSelections.teamIds = selectedValues;
+        if (!dropdownId.includes('Remove')) dd.team.remove.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Add')) dd.team.add.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Change')) dd.team.change.setSelectedValues(selectedValues);
+      } else if (dropdownId.includes('managementUnitDropdown')) {
+        sharedSelections.managementUnitIds = selectedValues;
+        if (!dropdownId.includes('Remove')) dd.managementUnit.remove.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Add')) dd.managementUnit.add.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Change')) dd.managementUnit.change.setSelectedValues(selectedValues);
+      } else if (dropdownId.includes('queueDropdown')) {
+        sharedSelections.queueIds = selectedValues;
+        if (!dropdownId.includes('Remove')) dd.queue.remove.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Add')) dd.queue.add.setSelectedValues(selectedValues);
+        if (!dropdownId.includes('Change')) dd.queue.change.setSelectedValues(selectedValues);
+      }
+    }
+
+    function syncSelectionsToCurrentTab(mode){
+      // Set dropdown values based on shared selections
+      dd.agent[mode].setSelectedValues(sharedSelections.agentIds);
+      dd.skill[mode].setSelectedValues(sharedSelections.skillIds);
+      dd.team[mode].setSelectedValues(sharedSelections.teamIds);
+      dd.managementUnit[mode].setSelectedValues(sharedSelections.managementUnitIds);
+      dd.queue[mode].setSelectedValues(sharedSelections.queueIds);
+    }
+
+    // ===== BULK CONTROLS =====
+    function setupBulkControls(){
+      // Bulk proficiency controls for Add tab
+      document.getElementById('bulkProfInc').addEventListener('click', () => {
+        const inp = document.getElementById('bulkProfInput');
+        nudgeProf(inp, +0.5);
+      });
+      document.getElementById('bulkProfDec').addEventListener('click', () => {
+        const inp = document.getElementById('bulkProfInput');
+        nudgeProf(inp, -0.5);
+      });
+      document.getElementById('bulkProfInput').addEventListener('blur', () => {
+        normalizeProf(document.getElementById('bulkProfInput'), true);
+      });
+
+      // Bulk proficiency controls for Change tab
+      document.getElementById('bulkProfChangeInc').addEventListener('click', () => {
+        const inp = document.getElementById('bulkProfChangeInput');
+        nudgeProf(inp, +0.5);
+      });
+      document.getElementById('bulkProfChangeDec').addEventListener('click', () => {
+        const inp = document.getElementById('bulkProfChangeInput');
+        nudgeProf(inp, -0.5);
+      });
+      document.getElementById('bulkProfChangeInput').addEventListener('blur', () => {
+        normalizeProf(document.getElementById('bulkProfChangeInput'), true);
+      });
+
+      // Bulk apply buttons
+      document.getElementById('applyBulkRemove').addEventListener('click', applyBulkRemove);
+      document.getElementById('applyBulkAdd').addEventListener('click', applyBulkAdd);
+      document.getElementById('applyBulkChange').addEventListener('click', applyBulkChange);
+    }
+
+    async function applyBulkRemove(){
+      const bulkSkillId = document.getElementById('bulkSkillRemove').value;
+      if (!bulkSkillId) {
+        showMessage('Please select a skill to remove from the bulk dropdown.');
+        return;
+      }
+
+      const checkedBoxes = document.querySelectorAll('#userSkillsTableRemove tbody .user-checkbox-remove:checked');
+      if (checkedBoxes.length === 0) {
+        showMessage('Please select at least one user from the table.');
+        return;
+      }
+
+      const btn = document.getElementById('applyBulkRemove');
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        
+        const ops = [];
+        checkedBoxes.forEach(cb => {
+          const userId = cb.getAttribute('data-user-id');
+          ops.push({ userId, skillId: bulkSkillId });
+        });
+
+        const results = await Promise.allSettled(ops.map(op => apiDeleteSkill(op.userId, op.skillId)));
+        const fails = results.filter(r => r.status === 'rejected');
+        
+        if (fails.length) {
+          showMessage(`Bulk removal completed with ${fails.length} error(s).`);
+        } else {
+          showMessage(`Successfully removed skill from ${ops.length} user(s).`, 'success');
+        }
+        
+        await fetchUsers('remove');
+      } catch (e) {
+        showMessage(`Failed to apply bulk removal: ${e.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Apply to Selected Users';
+      }
+    }
+
+    async function applyBulkAdd(){
+      const bulkSkillId = document.getElementById('bulkSkillAdd').value;
+      if (!bulkSkillId) {
+        showMessage('Please select a skill to add from the bulk dropdown.');
+        return;
+      }
+
+      const bulkProf = parseFloat(document.getElementById('bulkProfInput').value);
+      if (!validProf(bulkProf)) {
+        showMessage('Please enter a valid proficiency value (1.0-5.0 in 0.5 increments).');
+        return;
+      }
+
+      const checkedBoxes = document.querySelectorAll('#userSkillsTableAdd tbody .user-checkbox-add:checked');
+      if (checkedBoxes.length === 0) {
+        showMessage('Please select at least one user from the table.');
+        return;
+      }
+
+      const btn = document.getElementById('applyBulkAdd');
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        
+        const ops = [];
+        checkedBoxes.forEach(cb => {
+          const userId = cb.getAttribute('data-user-id');
+          ops.push({ userId, id: bulkSkillId, proficiency: clampProf(bulkProf) });
+        });
+
+        const results = await Promise.allSettled(ops.map(op => apiPostSkill(op.userId, op.id, op.proficiency)));
+        const fails = results.filter(r => r.status === 'rejected');
+        
+        if (fails.length) {
+          showMessage(`Bulk addition completed with ${fails.length} error(s).`);
+        } else {
+          showMessage(`Successfully added skill to ${ops.length} user(s).`, 'success');
+        }
+        
+        await fetchUsers('add');
+      } catch (e) {
+        showMessage(`Failed to apply bulk addition: ${e.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Apply to Selected Users';
+      }
+    }
+
+    async function applyBulkChange(){
+      const bulkSkillId = document.getElementById('bulkSkillChange').value;
+      if (!bulkSkillId) {
+        showMessage('Please select a skill to change from the bulk dropdown.');
+        return;
+      }
+
+      const bulkProf = parseFloat(document.getElementById('bulkProfChangeInput').value);
+      if (!validProf(bulkProf)) {
+        showMessage('Please enter a valid proficiency value (1.0-5.0 in 0.5 increments).');
+        return;
+      }
+
+      const checkedBoxes = document.querySelectorAll('#userSkillsTableChange tbody .user-checkbox-change:checked');
+      if (checkedBoxes.length === 0) {
+        showMessage('Please select at least one user from the table.');
+        return;
+      }
+
+      const btn = document.getElementById('applyBulkChange');
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        
+        const ops = [];
+        checkedBoxes.forEach(cb => {
+          const userId = cb.getAttribute('data-user-id');
+          ops.push({ userId, id: bulkSkillId, proficiency: clampProf(bulkProf) });
+        });
+
+        const results = await Promise.allSettled(ops.map(op => apiPostSkill(op.userId, op.id, op.proficiency)));
+        const fails = results.filter(r => r.status === 'rejected');
+        
+        if (fails.length) {
+          showMessage(`Bulk change completed with ${fails.length} error(s).`);
+        } else {
+          showMessage(`Successfully changed skill for ${ops.length} user(s).`, 'success');
+        }
+        
+        await fetchUsers('change');
+      } catch (e) {
+        showMessage(`Failed to apply bulk change: ${e.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Apply to Selected Users';
+      }
+    }
+
     // ===== EVENTS =====
     function setupEventListeners(){
       document.querySelectorAll('.tab').forEach(tab=>{
@@ -529,7 +862,11 @@
           document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
           document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
           tab.classList.add('active');
-          document.getElementById(tab.dataset.tab+'Tab').classList.add('active');
+          const mode = tab.dataset.tab;
+          document.getElementById(mode+'Tab').classList.add('active');
+          
+          // Sync selections when switching tabs
+          syncSelectionsToCurrentTab(mode);
         });
       });
 
@@ -555,11 +892,21 @@
       document.getElementById('updateProficiency').addEventListener('click', ()=> updateSelectedProficiency());
     }
 
-    function getSelectedAgentIds(mode){ return dd.agent[mode].getSelectedValues(); }
-    function getSelectedSkillIds(mode){ return dd.skill[mode].getSelectedValues(); }
-    function getSelectedTeamIds(mode){  return dd.team[mode].getSelectedValues();  }
-    function getSelectedManagementUnitIds(mode){  return dd.managementUnit[mode].getSelectedValues();  }
-    function getSelectedQueueIds(mode){  return dd.queue[mode].getSelectedValues();  }
+    function getSelectedAgentIds(mode){ 
+      return dd.agent[mode].getSelectedValues(); 
+    }
+    function getSelectedSkillIds(mode){ 
+      return dd.skill[mode].getSelectedValues(); 
+    }
+    function getSelectedTeamIds(mode){  
+      return dd.team[mode].getSelectedValues();  
+    }
+    function getSelectedManagementUnitIds(mode){  
+      return dd.managementUnit[mode].getSelectedValues();  
+    }
+    function getSelectedQueueIds(mode){  
+      return dd.queue[mode].getSelectedValues();  
+    }
 
     // ===== FETCH USERS + SKILLS =====
     async function fetchUsers(mode){
@@ -610,6 +957,7 @@
       }));
 
       // Filter by selected skills:
+      let filtered;
       if (skillIds.length){
         const hasAny = (skills)=> skills.some(s => skillIds.includes(s.id));
         const hasAll = (skills)=> skillIds.every(id => skills.some(s=>s.id===id));
@@ -977,7 +1325,10 @@
       v = Math.round((v + delta)*2)/2; v = Math.min(5, Math.max(1, v));
       inp.value = v.toFixed(1);
     }
-    function validProf(v){ const n = parseFloat(v); return !Number.isNaN(n) && n>=1 && n<=5 && Math.abs(n*2 - Math.round(n*2)) < 1e-9; }
+    function validProf(v){ 
+      const n = parseFloat(v); 
+      return !Number.isNaN(n) && n>=1 && n<=5 && Math.abs(n*2 - Math.round(n*2)) < 1e-9; 
+    }
     function clampProf(v){ return Math.min(5, Math.max(1, v)); }
   </script>
 </body>

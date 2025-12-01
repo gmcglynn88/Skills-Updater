@@ -41,10 +41,19 @@
     .prof-wrap{display:flex;gap:8px;align-items:center;margin-top:6px}
     .prof-input,.prof-input-change{width:90px}
     .muted{color:var(--text-light);font-size:12px}
-    .bulk-section{background:#f8f9fa;padding:15px;border-radius:8px;border:1px solid #dee2e6;margin-bottom:20px;display:flex;gap:15px;align-items:flex-end;flex-wrap:wrap}
-    .bulk-section > div{min-width:250px;flex:1}
-    .bulk-section button{min-width:180px}
-
+    
+    /* Bulk section - improved layout */
+    .bulk-section{background:#f8f9fa;padding:20px;border-radius:8px;border:1px solid #dee2e6;margin-bottom:24px;display:grid;grid-template-columns:1fr auto auto;gap:20px;align-items:end}
+    .bulk-skill-selector{min-width:300px}
+    .bulk-proficiency{display:flex;align-items:center;gap:10px;min-width:200px}
+    .bulk-proficiency label{margin-bottom:0;white-space:nowrap}
+    .bulk-proficiency-controls{display:flex;align-items:center;gap:6px}
+    .bulk-action{min-width:180px}
+    
+    /* Small buttons */
+    .small-btn{padding:8px 16px;font-size:14px}
+    .tiny-btn{padding:4px 10px;font-size:12px;min-width:32px}
+    
     /* Checkbox dropdown */
     .checkbox-dropdown{position:relative;min-width:220px;width:100%}
     .cd-trigger{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-color);border-radius:6px;background:#fff;padding:10px;cursor:pointer;width:100%;box-sizing:border-box}
@@ -62,13 +71,19 @@
     .cd-item label{display:flex;align-items:center;gap:10px;cursor:pointer;width:100%}
     .cd-footer{padding:8px 12px;background:#fafafa;border-top:1px solid var(--border-color);font-size:12px;color:var(--text-light);display:flex;justify-content:space-between}
     
+    /* Small proficiency input */
+    .small-prof-input{width:70px;padding:6px 8px;font-size:13px}
+    
     /* Responsive adjustments */
     @media (max-width: 1200px) {
       .controls {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       }
-      .bulk-section > div {
-        min-width: 200px;
+      .bulk-section {
+        grid-template-columns: 1fr auto;
+      }
+      .bulk-proficiency {
+        grid-column: 1 / -1;
       }
     }
     
@@ -77,13 +92,13 @@
         grid-template-columns: 1fr;
       }
       .bulk-section {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+        gap: 15px;
       }
-      .bulk-section > div {
-        min-width: 100%;
+      .bulk-proficiency {
+        grid-column: auto;
       }
-      .bulk-section button {
+      .bulk-action {
         min-width: 100%;
       }
     }
@@ -143,15 +158,13 @@
 
       <div class="card">
         <div class="bulk-section">
-          <div>
+          <div class="bulk-skill-selector">
             <label>Apply to All Selected Users</label>
-            <select id="bulkSkillRemove" style="width:100%">
-              <option value="">Select Skill to Remove from All</option>
-            </select>
+            <div id="bulkSkillRemoveDropdown" class="checkbox-dropdown"></div>
           </div>
-          <div>
+          <div class="bulk-action">
             <label>&nbsp;</label>
-            <button id="applyBulkRemove" class="full-width-btn">Apply to Selected Users</button>
+            <button id="applyBulkRemove" class="full-width-btn small-btn">Apply to Selected Users</button>
           </div>
         </div>
         
@@ -205,23 +218,21 @@
 
       <div class="card">
         <div class="bulk-section">
-          <div>
+          <div class="bulk-skill-selector">
             <label>Apply to All Selected Users</label>
-            <select id="bulkSkillAdd" style="width:100%">
-              <option value="">Select Skill to Add to All</option>
-            </select>
+            <div id="bulkSkillAddDropdown" class="checkbox-dropdown"></div>
           </div>
-          <div>
+          <div class="bulk-proficiency">
             <label>Proficiency</label>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div class="bulk-proficiency-controls">
               <button type="button" class="tiny-btn" id="bulkProfDec">−</button>
-              <input type="number" step="0.5" min="1" max="5" value="3.0" id="bulkProfInput" style="flex:1" />
+              <input type="number" step="0.5" min="1" max="5" value="3.0" id="bulkProfInput" class="small-prof-input" />
               <button type="button" class="tiny-btn" id="bulkProfInc">+</button>
             </div>
           </div>
-          <div>
+          <div class="bulk-action">
             <label>&nbsp;</label>
-            <button id="applyBulkAdd" class="full-width-btn">Apply to Selected Users</button>
+            <button id="applyBulkAdd" class="full-width-btn small-btn">Apply to Selected Users</button>
           </div>
         </div>
         
@@ -275,23 +286,21 @@
 
       <div class="card">
         <div class="bulk-section">
-          <div>
+          <div class="bulk-skill-selector">
             <label>Apply to All Selected Users</label>
-            <select id="bulkSkillChange" style="width:100%">
-              <option value="">Select Skill to Change for All</option>
-            </select>
+            <div id="bulkSkillChangeDropdown" class="checkbox-dropdown"></div>
           </div>
-          <div>
+          <div class="bulk-proficiency">
             <label>New Proficiency</label>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div class="bulk-proficiency-controls">
               <button type="button" class="tiny-btn" id="bulkProfChangeDec">−</button>
-              <input type="number" step="0.5" min="1" max="5" value="3.0" id="bulkProfChangeInput" style="flex:1" />
+              <input type="number" step="0.5" min="1" max="5" value="3.0" id="bulkProfChangeInput" class="small-prof-input" />
               <button type="button" class="tiny-btn" id="bulkProfChangeInc">+</button>
             </div>
           </div>
-          <div>
+          <div class="bulk-action">
             <label>&nbsp;</label>
-            <button id="applyBulkChange" class="full-width-btn">Apply to Selected Users</button>
+            <button id="applyBulkChange" class="full-width-btn small-btn">Apply to Selected Users</button>
           </div>
         </div>
         
@@ -343,6 +352,13 @@
       queue: { remove:null, add:null, change:null }
     };
 
+    // Bulk dropdown instances
+    const bulkDd = {
+      remove: null,
+      add: null,
+      change: null
+    };
+
     // ===== OAUTH BOOT =====
     document.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.hash.substring(1));
@@ -377,6 +393,7 @@
           fetchAllQueues()
         ]);
         createAllDropdowns();
+        createBulkDropdowns();
         populateDropdowns();
         setupEventListeners();
         setupBulkControls();
@@ -502,7 +519,7 @@
           cb.addEventListener('change', ()=>{
             if (cb.checked) selected.add(o.value); else selected.delete(o.value);
             updateSummary(); updateSelectAllState();
-            updateSharedSelections(containerId, Array.from(selected));
+            if (mode) updateSharedSelections(containerId, Array.from(selected), mode);
           });
           list.appendChild(row);
         });
@@ -525,14 +542,14 @@
         render(search.value); 
         updateSummary(); 
         updateSelectAllState();
-        updateSharedSelections(containerId, []);
+        if (mode) updateSharedSelections(containerId, [], mode);
       });
       selectAll.addEventListener('change', ()=>{
         if (selectAll.checked) options.forEach(o=> selected.add(o.value)); 
         else selected.clear();
         render(search.value); 
         updateSummary();
-        updateSharedSelections(containerId, Array.from(selected));
+        if (mode) updateSharedSelections(containerId, Array.from(selected), mode);
       });
 
       function setOptions(newOptions){
@@ -577,6 +594,12 @@
       dd.queue.change = createCheckboxDropdown('queueDropdownChange', { placeholder:'Select queues', searchPlaceholder:'Search queues...' }, 'change');
     }
 
+    function createBulkDropdowns(){
+      bulkDd.remove = createCheckboxDropdown('bulkSkillRemoveDropdown', { placeholder:'Select skills to remove', searchPlaceholder:'Search skills...' });
+      bulkDd.add = createCheckboxDropdown('bulkSkillAddDropdown', { placeholder:'Select skills to add', searchPlaceholder:'Search skills...' });
+      bulkDd.change = createCheckboxDropdown('bulkSkillChangeDropdown', { placeholder:'Select skills to change', searchPlaceholder:'Search skills...' });
+    }
+
     // ===== POPULATE =====
     function populateDropdowns(){
       // Agents
@@ -597,7 +620,9 @@
       dd.skill.change.setOptions(skillOpts);
 
       // Populate bulk dropdowns
-      populateBulkDropdowns();
+      bulkDd.remove.setOptions(skillOpts);
+      bulkDd.add.setOptions(skillOpts);
+      bulkDd.change.setOptions(skillOpts);
 
       // Teams
       const teamOpts = (availableTeams||[])
@@ -624,53 +649,34 @@
       dd.queue.change.setOptions(queueOpts);
     }
 
-    function populateBulkDropdowns(){
-      const skillOpts = (availableSkills||[])
-        .map(s => ({ value: s.id, label: s.name }))
-        .sort((a,b)=>a.label.localeCompare(b.label));
-      
-      const bulkRemoveSelect = document.getElementById('bulkSkillRemove');
-      const bulkAddSelect = document.getElementById('bulkSkillAdd');
-      const bulkChangeSelect = document.getElementById('bulkSkillChange');
-      
-      bulkRemoveSelect.innerHTML = '<option value="">Select Skill to Remove from All</option>' + 
-        skillOpts.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
-      
-      bulkAddSelect.innerHTML = '<option value="">Select Skill to Add to All</option>' + 
-        skillOpts.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
-      
-      bulkChangeSelect.innerHTML = '<option value="">Select Skill to Change for All</option>' + 
-        skillOpts.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
-    }
-
     // ===== SHARED SELECTIONS =====
-    function updateSharedSelections(dropdownId, selectedValues){
+    function updateSharedSelections(dropdownId, selectedValues, mode){
       if (dropdownId.includes('agentDropdown')) {
         sharedSelections.agentIds = selectedValues;
         // Update other agent dropdowns
-        if (!dropdownId.includes('Remove')) dd.agent.remove.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Add')) dd.agent.add.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Change')) dd.agent.change.setSelectedValues(selectedValues);
+        if (mode !== 'remove') dd.agent.remove.setSelectedValues(selectedValues);
+        if (mode !== 'add') dd.agent.add.setSelectedValues(selectedValues);
+        if (mode !== 'change') dd.agent.change.setSelectedValues(selectedValues);
       } else if (dropdownId.includes('skillDropdown')) {
         sharedSelections.skillIds = selectedValues;
-        if (!dropdownId.includes('Remove')) dd.skill.remove.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Add')) dd.skill.add.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Change')) dd.skill.change.setSelectedValues(selectedValues);
+        if (mode !== 'remove') dd.skill.remove.setSelectedValues(selectedValues);
+        if (mode !== 'add') dd.skill.add.setSelectedValues(selectedValues);
+        if (mode !== 'change') dd.skill.change.setSelectedValues(selectedValues);
       } else if (dropdownId.includes('teamDropdown')) {
         sharedSelections.teamIds = selectedValues;
-        if (!dropdownId.includes('Remove')) dd.team.remove.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Add')) dd.team.add.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Change')) dd.team.change.setSelectedValues(selectedValues);
+        if (mode !== 'remove') dd.team.remove.setSelectedValues(selectedValues);
+        if (mode !== 'add') dd.team.add.setSelectedValues(selectedValues);
+        if (mode !== 'change') dd.team.change.setSelectedValues(selectedValues);
       } else if (dropdownId.includes('managementUnitDropdown')) {
         sharedSelections.managementUnitIds = selectedValues;
-        if (!dropdownId.includes('Remove')) dd.managementUnit.remove.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Add')) dd.managementUnit.add.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Change')) dd.managementUnit.change.setSelectedValues(selectedValues);
+        if (mode !== 'remove') dd.managementUnit.remove.setSelectedValues(selectedValues);
+        if (mode !== 'add') dd.managementUnit.add.setSelectedValues(selectedValues);
+        if (mode !== 'change') dd.managementUnit.change.setSelectedValues(selectedValues);
       } else if (dropdownId.includes('queueDropdown')) {
         sharedSelections.queueIds = selectedValues;
-        if (!dropdownId.includes('Remove')) dd.queue.remove.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Add')) dd.queue.add.setSelectedValues(selectedValues);
-        if (!dropdownId.includes('Change')) dd.queue.change.setSelectedValues(selectedValues);
+        if (mode !== 'remove') dd.queue.remove.setSelectedValues(selectedValues);
+        if (mode !== 'add') dd.queue.add.setSelectedValues(selectedValues);
+        if (mode !== 'change') dd.queue.change.setSelectedValues(selectedValues);
       }
     }
 
@@ -718,9 +724,9 @@
     }
 
     async function applyBulkRemove(){
-      const bulkSkillId = document.getElementById('bulkSkillRemove').value;
-      if (!bulkSkillId) {
-        showMessage('Please select a skill to remove from the bulk dropdown.');
+      const bulkSkillIds = bulkDd.remove.getSelectedValues();
+      if (bulkSkillIds.length === 0) {
+        showMessage('Please select at least one skill to remove from the bulk dropdown.');
         return;
       }
 
@@ -738,7 +744,9 @@
         const ops = [];
         checkedBoxes.forEach(cb => {
           const userId = cb.getAttribute('data-user-id');
-          ops.push({ userId, skillId: bulkSkillId });
+          bulkSkillIds.forEach(skillId => {
+            ops.push({ userId, skillId });
+          });
         });
 
         const results = await Promise.allSettled(ops.map(op => apiDeleteSkill(op.userId, op.skillId)));
@@ -747,7 +755,7 @@
         if (fails.length) {
           showMessage(`Bulk removal completed with ${fails.length} error(s).`);
         } else {
-          showMessage(`Successfully removed skill from ${ops.length} user(s).`, 'success');
+          showMessage(`Successfully removed ${bulkSkillIds.length} skill(s) from ${checkedBoxes.length} user(s).`, 'success');
         }
         
         await fetchUsers('remove');
@@ -760,9 +768,9 @@
     }
 
     async function applyBulkAdd(){
-      const bulkSkillId = document.getElementById('bulkSkillAdd').value;
-      if (!bulkSkillId) {
-        showMessage('Please select a skill to add from the bulk dropdown.');
+      const bulkSkillIds = bulkDd.add.getSelectedValues();
+      if (bulkSkillIds.length === 0) {
+        showMessage('Please select at least one skill to add from the bulk dropdown.');
         return;
       }
 
@@ -786,7 +794,9 @@
         const ops = [];
         checkedBoxes.forEach(cb => {
           const userId = cb.getAttribute('data-user-id');
-          ops.push({ userId, id: bulkSkillId, proficiency: clampProf(bulkProf) });
+          bulkSkillIds.forEach(skillId => {
+            ops.push({ userId, id: skillId, proficiency: clampProf(bulkProf) });
+          });
         });
 
         const results = await Promise.allSettled(ops.map(op => apiPostSkill(op.userId, op.id, op.proficiency)));
@@ -795,7 +805,7 @@
         if (fails.length) {
           showMessage(`Bulk addition completed with ${fails.length} error(s).`);
         } else {
-          showMessage(`Successfully added skill to ${ops.length} user(s).`, 'success');
+          showMessage(`Successfully added ${bulkSkillIds.length} skill(s) to ${checkedBoxes.length} user(s).`, 'success');
         }
         
         await fetchUsers('add');
@@ -808,9 +818,9 @@
     }
 
     async function applyBulkChange(){
-      const bulkSkillId = document.getElementById('bulkSkillChange').value;
-      if (!bulkSkillId) {
-        showMessage('Please select a skill to change from the bulk dropdown.');
+      const bulkSkillIds = bulkDd.change.getSelectedValues();
+      if (bulkSkillIds.length === 0) {
+        showMessage('Please select at least one skill to change from the bulk dropdown.');
         return;
       }
 
@@ -834,7 +844,9 @@
         const ops = [];
         checkedBoxes.forEach(cb => {
           const userId = cb.getAttribute('data-user-id');
-          ops.push({ userId, id: bulkSkillId, proficiency: clampProf(bulkProf) });
+          bulkSkillIds.forEach(skillId => {
+            ops.push({ userId, id: skillId, proficiency: clampProf(bulkProf) });
+          });
         });
 
         const results = await Promise.allSettled(ops.map(op => apiPostSkill(op.userId, op.id, op.proficiency)));
@@ -843,7 +855,7 @@
         if (fails.length) {
           showMessage(`Bulk change completed with ${fails.length} error(s).`);
         } else {
-          showMessage(`Successfully changed skill for ${ops.length} user(s).`, 'success');
+          showMessage(`Successfully changed ${bulkSkillIds.length} skill(s) for ${checkedBoxes.length} user(s).`, 'success');
         }
         
         await fetchUsers('change');
